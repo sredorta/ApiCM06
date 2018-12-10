@@ -15,10 +15,13 @@ class CreateUsersTable extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->rememberToken();
+            $table->string('firstName',50);
+            $table->string('lastName',50);
+            $table->string('email',100)->unique(); //Email max length is 191 chars and cannot be changed
+            $table->string('mobile',10)->unique();
+            $table->boolean('isEmailValidated')->default(false);
+            $table->string('emailValidationKey',50)->default('default');
+            $table->string('language',10)->default('fr');          
             $table->timestamps();
         });
     }
