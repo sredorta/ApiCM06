@@ -109,10 +109,10 @@ class AuthTest extends TestCase
             'password'=> 'Secure0'            
         ];        
         $response = $this->post('api/auth/signup', $data);
-        dd($response->json());
-        //$response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);
+
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);
         //Recreate same user
-/*        $response = $this->post('api/auth/signup', $data);
+        $response = $this->post('api/auth/signup', $data);
         $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.user_already_exists']);
         //Check phone
         $data['email'] = 'sergi.redorta2@hotmail.com';
@@ -123,7 +123,40 @@ class AuthTest extends TestCase
         $data['email'] = 'sergi.redorta@hotmail.com';
         $response = $this->post('api/auth/signup', $data);
         $response->assertStatus(400)->assertJson(['response'=>'error', 'message'=>'auth.user_already_exists']);
-        //dd ($response->json());*/
+        //dd ($response->json());
+    }
+
+    public function testAuthLoginValid() {
+        $data = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133213',
+            'password'=> 'Secure0'            
+        ];        
+        $response = $this->post('api/auth/signup', $data);
+        $response->assertStatus(200)->assertJson(['response'=>'success', 'message'=>'auth.signup_success']);
+        //Update is validated
+        if (User::all()->count()>0) {
+            $user = User::all()->last();
+            $user->isEmailValidated = true;
+            $user->update();  
+        }
+
+        $data = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'password' => 'Secure0',
+            'keepconnected' => false
+        ];
+        //Now we login and get the token
+        $response = $this->post('api/auth/login', $data);
+        $response->assertStatus(200);  //expected status
+        dd($response->json());
+        //Now get the Auth user
+        //$result = $response->json();
+        //$token = $result['token']; //This is our response 
+        //$this->token = $token;        
+
     }
 
 

@@ -242,7 +242,6 @@ trait AuthTrait {
     ],401);
   }
 
-
   //Check if isEmailValidated in the User if not invalidate token and return error
   JWTAuth::setToken($token) ;
   $account = JWTAuth::toUser();
@@ -279,7 +278,7 @@ trait AuthTrait {
       
       $user = User::find($payload->get('user_id'));
       $user->account = Account::find($payload->get('account_id'))->access;
-      $avatar = $user->attachments()->where('title','avatar')->get()->first();
+/*      $avatar = $user->attachments()->where('title','avatar')->get()->first();
       if ($avatar) {
         if ($avatar->thumbs()->get()->count() == 0)
             $user->avatar = ["full" => ["url"=> $avatar->url]];
@@ -296,7 +295,7 @@ trait AuthTrait {
       $user->notifications = $user->notifications()->where('isRead',false)->get()->count();
       $user->messages = $user->messages()->where('isRead',false)->get()->count();
       $user->roles = $user->roles()->get()->pluck('name');
-      $user->groups = $user->groups()->get()->pluck('name');
+      $user->groups = $user->groups()->get()->pluck('name');*/
 
       return response()->json($user,200);    
   } 

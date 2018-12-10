@@ -19,7 +19,7 @@ class CreateAccountsTable extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');   
             $table->string('key',30)->unique(); 
             $table->string('password',255);
-            $table->string('access',50)->default('MEMBER');//Config::get('constants.ACCESS_DEFAULT'));            
+            $table->string('access',50)->default(Config::get('constants.ACCESS_DEFAULT'));            
             $table->timestamps();
         });
     }
