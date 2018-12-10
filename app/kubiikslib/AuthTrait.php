@@ -70,7 +70,6 @@ trait AuthTrait {
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
         }        
-
         //Check if user already registerd in the Users
         $validator = Validator::make($request->all(), [
             'email' => 'required|unique:users',
@@ -91,8 +90,9 @@ trait AuthTrait {
             'emailValidationKey' => $this->generateEmailKey(),
             'language' => $language
         ]);
+
         //We now create the Attachable with the image uploaded
-        $attachment = new Attachment;
+/*        $attachment = new Attachment;
         $attachment->attachable_id = $user->id;
         $attachment->attachable_type = User::class;
         $response = $attachment->getTargetFile($request->file('avatar'), "avatar");
@@ -102,7 +102,7 @@ trait AuthTrait {
         $attachment->alt_text = "avatar";
         $attachment->title = "avatar";
         $attachment->save(); //save and generate thumbs
-
+*/
         //SECOND: we create the standard User (account)
         $account = new Account;
         $account->key = Helper::generateRandomStr(30);
@@ -122,9 +122,9 @@ trait AuthTrait {
         $this->sendEmail($user->email, __('email.confirm_subject'), $data);
 
         //Add user notification
-        $notification = new Notification;
+/*        $notification = new Notification;
         $notification->text = __('notification.welcome', ['name'=>$user->firstName]);
-        $user->notifications()->save($notification);
+        $user->notifications()->save($notification);*/
 
         //FINALLY:: Return ok code
         return response()->json([

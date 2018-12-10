@@ -15,15 +15,21 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'firstName','lastName', 'email', 'mobile','isEmailValidated','emailValidationKey','language'
     ];
-
     /**
      * The attributes that should be hidden for arrays.
      *
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'emailValidationKey',
     ];
+
+
+    //Return the accounts of the user
+    public function accounts() {
+        return $this->hasMany('App\Account');
+    }
+        
 }
