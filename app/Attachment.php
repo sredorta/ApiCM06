@@ -8,19 +8,22 @@ use App\kubiikslib\Helper;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Intervention\Image\ImageManager;
+use App\Thumb;
 use finfo;
 
 class Attachment extends Model
 {
     public $guarded = []; //Allow all fields as fillable
 
-
-/*    protected $unguard = [
-        'file_path','file_name','file_extension'
-    ];*/
+    private $myFile = null;
 
     public function attachable() {
         return $this->morphTo();
+    }
+    //Return the thumbs of the attachable
+    public function thumbs() {
+        return $this->hasMany('App\Thumb');
     }
 
     //Gets file extension
@@ -54,6 +57,7 @@ class Attachment extends Model
         $this->file_size =  Storage::disk('public')->size('/uploads/' . $this->file_name);
         $this->url = $this->getUrl();
         $this->mime_type = $this->getMimeType();
+        $this->myFile = $file;
         return $this;
     }
 
@@ -70,6 +74,7 @@ class Attachment extends Model
                 $file = null;
         }
         if ($file !== null) {
+            $this->myFile = $file;
             $this->file_name = basename($file);
             $this->file_extension = $this->getFileExtension($this->file_name);
             $this->file_size =  Storage::disk('public')->size('/defaults/' . $this->file_name);
@@ -86,9 +91,7 @@ class Attachment extends Model
             $this->uploadFile($file); //Automatically fills file_name, file_extension, file_size, url
         } else {
             $result = $this->getDefault($default); //Get default file and fills file_name...
-
             if ($result == null) {
-//                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])], 400);
                 return ['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])];
             }      
         }
@@ -114,16 +117,25 @@ class Attachment extends Model
 
     //Save the register and create the thumbnails if required
     public function save(array $options = []) {
+        if (strpos($this->mime_type, 'image') !== false) {
+            $this->isImage = true;
+            $manager = new ImageManager(array('driver' => 'gd'));
+            $image = Storage::disk('public')->get($this->myFile);
+            $imageOrig = $manager->make($image); 
+            //Get width and height of the image
+            $this->img_width = $imageOrig->width();
+            $this->img_height = $imageOrig->height();
+        }
         parent::save($options);
-        //$this->createThumbs();
+        $this->createThumbs();
     }
 
     //Delete an attachable register and delete the associated data
     public function remove() {
         //Check if there are thumbs and delete files and db
-        //foreach ($this->thumbs()->get() as $thumb) {
-        //    $thumb->remove();
-        //}
+        foreach ($this->thumbs()->get() as $thumb) {
+            $thumb->remove();
+        }        
         //Delete the attachable itself only if is not default
         if (strpos($this->url, '/defaults/') === false) {
             Storage::disk('public')->delete($this->getPath());

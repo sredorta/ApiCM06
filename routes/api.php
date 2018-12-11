@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
     Route::get('auth/lang/any', 'AccountController@language');
+    Route::get('brands', 'BrandController@getAll');
 });
 
 //Only if we are not loggedIn

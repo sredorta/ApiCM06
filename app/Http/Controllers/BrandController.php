@@ -12,8 +12,13 @@ class BrandController extends Controller
 
     //Return our messages
     public function getAll(Request $request) {
-        $brands = Brand::all()->get();
-        return response()->json($brands->toArray(),200);
+        $result = [];
+        foreach (Brand::all() as $brand) {
+            $brand->tumbs = $brand->attachments()->get()->first()->thumbs()->get();
+            $brand->image = $brand->attachments()->get()->first();
+            array_push($result, $brand);
+        }
+        return response()->json($result,200);
     }
 
     public function create(Request $request) {
@@ -35,11 +40,17 @@ class BrandController extends Controller
            return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
        }
        $attachment->alt_text = "Logo marque";
-       $attachment->title = "My title";
-       $attachment->description = "My description";
+       $attachment->title = "No title";
+       $attachment->description = "No description";
        $attachment->save(); //save and generate thumbs
 
-        return response()->json(['response'=>'success', 'message'=>'this is a success test'], 200);
+       //Return data
+       $brand->tumbs = $brand->attachments()->get()->first()->thumbs()->get();
+       $brand->image = $brand->attachments()->get()->first();
+
+       return response()->json($brand,200);  
+//       return $brand->with('attachments')->toArray();
+//        return response()->json(['response'=>'success', 'message'=>'this is a success test'], 200);
     }
 
 /*

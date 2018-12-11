@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Attachment;
 
 class Brand extends Model
 {
@@ -14,4 +15,8 @@ class Brand extends Model
     protected $fillable = [
         'name','description'
     ];
+    //Return the attachments if any
+    public function attachments() {
+        return $this->morphMany(Attachment::class,'attachable');
+    }
 }

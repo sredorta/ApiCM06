@@ -13,6 +13,7 @@ use App\User;
 use App\Account;
 use App\Attachment;
 use App\Brand;
+use App\Thumb;
 
 class BrandTest extends TestCase
 {
@@ -56,6 +57,7 @@ class BrandTest extends TestCase
         //dd($response->json());
         $response->assertStatus(200);
         //dd(Attachment::all()->toArray());
+        dd($response->json());
         $this->assertDatabaseHas('brands', [
             'name'=>'honda', 'description' => 'This is a test description'
         ]);  
@@ -76,7 +78,8 @@ class BrandTest extends TestCase
         $response = $this->post('api/brands/create', $data);
         //dd($response->json());
         $response->assertStatus(200);
-        //dd(Attachment::all()->toArray());
+        dd($response->json());
+        dd(Thumb::all()->toArray());
         $this->assertDatabaseHas('brands', [
             'name'=>'honda', 'description' => 'This is a test description'
         ]);  
@@ -88,9 +91,30 @@ class BrandTest extends TestCase
         ]);
         $attachment = Attachment::find(1);
         $this->assertFileExists($this->getFileForAttachment($attachment));
-
-
     }
 
 
+    public function testBrandGetAll() {
+        $auth = $this->loginAsAdmin();
+        $path = dirname(__DIR__) . '/storage/test_files/test.jpg';
+        $file = new UploadedFile($path, 'test.jpg', filesize($path), 'image/jpeg', null, true);       
+
+        $data = [
+            'name' => 'honda',
+            'description' => 'This is a test description',
+            'image' => $file       
+        ];
+        $response = $this->post('api/brands/create', $data);
+        $data = [
+            'name' => 'hunday',
+            'description' => 'This is a test description',
+            'image' => $file       
+        ];        
+        $response = $this->post('api/brands/create', $data);
+
+        $response = $this->get('api/brands');
+        dd($response->json());
+
+        $this->assertFileExists($this->getFileForAttachment($attachment));
+    }
 }
