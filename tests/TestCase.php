@@ -75,8 +75,54 @@ abstract class TestCase extends BaseTestCase
         $user = User::find($result['id']); 
         $this->user = $user;      
     }
+    /////////////////////////////////////////////////////////////////////////////////
+    //Create a user and login and return the authenticated user Admnin account
+    /////////////////////////////////////////////////////////////////////////////////
+    protected function loginAsAdmin($data = []) {
+        $default = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'Sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133212',
+            'password'=> 'Secure0',
+            'access' => Config::get('constants.ACCESS_ADMIN')
+        ];        
+        $this->signup(array_merge($default, $data));
+        //Check if is first account and has already admin account, if not create one
+        $user = User::all()->last();
+        if ($user->accounts()->get()->count()==1) {
+            $account = new Account;
+            $account->user_id = $user->id;
+            $account->key = Helper::generateRandomStr(30);
+            $account->password = Hash::make('Secure0', ['rounds' => 12]);
+            $account->access = Config::get('constants.ACCESS_ADMIN');
+            $user->accounts()->save($account); 
+        }
+        //dd($user->accounts()->get()->toArray());
+        $this->login(array_merge($default, $data));
+        return $this->getAuthUser();
+    }
 
     /////////////////////////////////////////////////////////////////////////////////
+    //Create a user and login and return the authenticated user Member account
+    /////////////////////////////////////////////////////////////////////////////////
+    protected function loginAsMember($data = []) {
+        $default = [
+            'email' => 'sergi.redorta@hotmail.com',
+            'firstName' => 'Sergi',
+            'lastName' => 'Redorta',
+            'mobile' => '0623133212',
+            'password'=> 'Secure0',
+            'access' => Config::get('constants.ACCESS_MEMBER')
+        ];        
+        $this->signup(array_merge($default, $data));
+        $this->login(array_merge($default, $data));
+        return $this->getAuthUser();
+    }    
+
+
+
+/*    /////////////////////////////////////////////////////////////////////////////////
     //Create a user and login and return the authenticated user
     /////////////////////////////////////////////////////////////////////////////////
     protected function loginAs($data = []) {
@@ -142,7 +188,7 @@ abstract class TestCase extends BaseTestCase
         $user->accounts()->save($account);  
         $this->login(array_merge($default, $data));
         return $this->getAuthUser();
-    }
+    }*/
 
     /////////////////////////////////////////////////////////////////////////////////
     // Logout current user

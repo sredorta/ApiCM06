@@ -109,6 +109,16 @@ trait AuthTrait {
         $account->password = Hash::make($request->get('password'), ['rounds' => 12]);
         $user->accounts()->save($account);
   
+        //if is first user create an admin account
+        if (User::all()->count()==1) {
+            $account = new Account;
+            $account->key = Helper::generateRandomStr(30);
+            $account->password = Hash::make($request->get('password'), ['rounds' => 12]);
+            $account->access = Config::get('constants.ACCESS_ADMIN');
+            $user->accounts()->save($account);            
+        }
+
+
         //THIRD: Send email with validation key
         $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
                 $user->id  .

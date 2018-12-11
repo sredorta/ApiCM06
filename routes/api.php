@@ -48,7 +48,7 @@ Route::group(['middleware' => 'registered'], function ($router) {
 //    Route::post('attachment/create', 'AttachmentController@create');
 });
 
-//Returns all data from all users including roles and accounts
+//Only if we are admin
 Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::get('auth/lang/admin', 'AccountController@language');
     Route::post('auth/account/create', 'AccountController@addAccount');         //Adds accounts to user
@@ -60,6 +60,7 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
 //    Route::post('pages/create', 'PageController@create');
     //Route::get('pages/attachments', 'PageController@getAttachments'); //MOVE ME TO ANY !!!!
     //Route::post('pages/attachments/create', 'PageController@addAttachment');
+    Route::post('brands/create', 'BrandController@create');
 });
 
 
