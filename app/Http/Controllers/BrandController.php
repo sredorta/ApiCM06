@@ -10,13 +10,38 @@ use Validator;
 class BrandController extends Controller
 {
 
+    private function outputBrand($brand, $size) {
+        $attachment = $brand->attachments()->get()->first();
+        $thumb = $attachment->thumbs()->where('size', $size)->first();
+        if ($thumb) {
+            unset($thumb->id);
+            unset($thumb->attachment_id);
+            unset($thumb->created_at);
+            unset($thumb->updated_at);
+            $thumb->alt_text = $attachment->alt_text;
+            $brand->image = $thumb;
+        } else {
+            unset($thumb);
+            $thumb = (object)[];
+            $thumb->url = $attachment->url;
+            $thumb->size = "full";
+            $thumb->width = $attachment->img_width;
+            $thumb->height = $attachment->img_height;
+            $thumb->file_size = $attachment->file_size;
+            $thumb->alt_text = $attachment->alt_text;
+            $brand->image = $thumb;
+        }
+        return $brand;        
+    }
+
     //Return our messages
     public function getAll(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'size'   => 'in:full,large,big,medium,small,thumbnail,tinythumbnail',
+        ]);
         $result = [];
         foreach (Brand::all() as $brand) {
-            $brand->tumbs = $brand->attachments()->get()->first()->thumbs()->get();
-            $brand->image = $brand->attachments()->get()->first();
-            array_push($result, $brand);
+            array_push($result, $this->outputBrand($brand, $request->size));
         }
         return response()->json($result,200);
     }
@@ -24,13 +49,13 @@ class BrandController extends Controller
     public function create(Request $request) {
         $validator = Validator::make($request->all(), [
             'name'   => 'required|unique:brands|min:2|max:100',
-            'description' => 'required|min:2|max:500',
-            'image' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048'
+            'image' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',
+            'size' => 'in:full,large,big,medium,small,thumbnail,tinythumbnail'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }                       
-        $brand = Brand::create(['name' => $request->name , 'description' => $request->description]);
+        $brand = Brand::create(['name' => $request->name]);
        //We now create the Attachable with the image uploaded
        $attachment = new Attachment;
        $attachment->attachable_id = $brand->id;
@@ -44,13 +69,7 @@ class BrandController extends Controller
        $attachment->description = "No description";
        $attachment->save(); //save and generate thumbs
 
-       //Return data
-       $brand->tumbs = $brand->attachments()->get()->first()->thumbs()->get();
-       $brand->image = $brand->attachments()->get()->first();
-
-       return response()->json($brand,200);  
-//       return $brand->with('attachments')->toArray();
-//        return response()->json(['response'=>'success', 'message'=>'this is a success test'], 200);
+       return response()->json($this->outputBrand($brand, $request->size),200);  
     }
 
 /*

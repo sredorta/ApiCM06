@@ -108,11 +108,11 @@ class BrandTest extends TestCase
         $data = [
             'name' => 'hunday',
             'description' => 'This is a test description',
-            'image' => $file       
+            'image' => null       
         ];        
         $response = $this->post('api/brands/create', $data);
 
-        $response = $this->get('api/brands');
+        $response = $this->post('api/brands', ['size' => 'medium']);
         dd($response->json());
 
         $this->assertFileExists($this->getFileForAttachment($attachment));
