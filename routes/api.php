@@ -62,6 +62,7 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     //Route::get('pages/attachments', 'PageController@getAttachments'); //MOVE ME TO ANY !!!!
     //Route::post('pages/attachments/create', 'PageController@addAttachment');
     Route::post('brands/create', 'BrandController@create');
+    Route::post('brands/update', 'BrandController@update');
 });
 
 

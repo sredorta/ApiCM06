@@ -40,7 +40,7 @@ class BrandController extends Controller
             'size'   => 'in:full,large,big,medium,small,thumbnail,tinythumbnail',
         ]);
         $result = [];
-        foreach (Brand::all() as $brand) {
+        foreach (Brand::orderBy('name')->get() as $brand) {
             array_push($result, $this->outputBrand($brand, $request->size));
         }
         return response()->json($result,200);
@@ -48,7 +48,7 @@ class BrandController extends Controller
 
     public function create(Request $request) {
         $validator = Validator::make($request->all(), [
-            'name'   => 'required|unique:brands|min:2|max:100',
+            'name'   => 'required|unique:brands,name|min:2|max:100',
             'image' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',
             'size' => 'in:full,large,big,medium,small,thumbnail,tinythumbnail'
         ]);
@@ -71,6 +71,42 @@ class BrandController extends Controller
 
        return response()->json($this->outputBrand($brand, $request->size),200);  
     }
+
+    public function update(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:brands,id',
+            'name'   => 'required|unique:brands,name,'.$request->id.',id|min:2|max:100',
+            'image' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',
+            'size' => 'in:full,large,big,medium,small,thumbnail,tinythumbnail'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }               
+            
+        $brand = Brand::find($request->id);
+        $brand->name = $request->name;
+        $brand->update();
+
+        if ($request->image !== null) {
+            //Delete previous attachment
+            $brand->attachments()->get()->first()->remove();
+            //We now create the Attachable with the image uploaded
+            $attachment = new Attachment;
+            $attachment->attachable_id = $brand->id;
+            $attachment->attachable_type = Brand::class;
+            $response = $attachment->getTargetFile($request->file('image'), "brand");
+            if ($response !== null) {
+                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
+            }
+            $attachment->alt_text = "Logo marque";
+            $attachment->title = "No title";
+            $attachment->description = "No description";
+            $attachment->save(); //save and generate thumbs
+        }
+       return response()->json($this->outputBrand($brand, $request->size),200);  
+    }
+
+
 
 /*
     //Return our messages
