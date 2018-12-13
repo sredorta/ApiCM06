@@ -117,4 +117,28 @@ class BrandTest extends TestCase
 
         $this->assertFileExists($this->getFileForAttachment($attachment));
     }
+
+    public function testBrandDelete() {
+        $auth = $this->loginAsAdmin();
+        $path = dirname(__DIR__) . '/storage/test_files/test.jpg';
+        $file = new UploadedFile($path, 'test.jpg', filesize($path), 'image/jpeg', null, true);       
+
+        $data = [
+            'name' => 'honda',
+            'description' => 'This is a test description',
+            'image' => $file       
+        ];
+        $response = $this->post('api/brands/create', $data);
+        $data = [
+            'name' => 'hunday',
+            'description' => 'This is a test description',
+            'image' => null       
+        ];        
+        $response = $this->post('api/brands/create', $data);
+        $response = $this->post('api/brands/delete', ['id' => 1]);
+        dd(Attachment::all()->toArray());
+
+        $this->assertFileExists($this->getFileForAttachment($attachment));
+    }
+
 }

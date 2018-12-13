@@ -63,6 +63,7 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     //Route::post('pages/attachments/create', 'PageController@addAttachment');
     Route::post('brands/create', 'BrandController@create');
     Route::post('brands/update', 'BrandController@update');
+    Route::post('brands/delete', 'BrandController@delete');
 });
 
 

@@ -89,7 +89,9 @@ class BrandController extends Controller
 
         if ($request->image !== null) {
             //Delete previous attachment
-            $brand->attachments()->get()->first()->remove();
+            foreach($brand->attachments()->get() as $attachment) {
+                $attachment->remove();
+            }
             //We now create the Attachable with the image uploaded
             $attachment = new Attachment;
             $attachment->attachable_id = $brand->id;
@@ -106,23 +108,6 @@ class BrandController extends Controller
        return response()->json($this->outputBrand($brand, $request->size),200);  
     }
 
-
-
-/*
-    //Return our messages
-    public function markAsRead(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'id'   => 'required|exists:messages,id'
-        ]);      
-        if ($validator->fails()) {
-            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
-        }      
-        $user = User::find($request->get("myUser"));
-        $user->messages()->where("id", $request->id)->update(['isRead' => true]);
-
-        return response()->json([],204);
-    }    
-*/
     //Delete message
     public function delete(Request $request) {
         $validator = Validator::make($request->all(), [
@@ -132,8 +117,11 @@ class BrandController extends Controller
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
         $brand = Brand::find($request->get("id"));
+        //Delete all attachments and thumbs
+        foreach($brand->attachments()->get() as $attachment) {
+            $attachment->remove();
+        }
         $brand->delete();
-
         return response()->json([],204);
     }   
 
