@@ -16,8 +16,6 @@ class BrandController extends Controller
         if ($thumb) {
             unset($thumb->id);
             unset($thumb->attachment_id);
-            unset($thumb->created_at);
-            unset($thumb->updated_at);
             $thumb->alt_text = $attachment->alt_text;
             $brand->image = $thumb;
         } else {
@@ -108,7 +106,7 @@ class BrandController extends Controller
        return response()->json($this->outputBrand($brand, $request->size),200);  
     }
 
-    //Delete message
+    //Delete
     public function delete(Request $request) {
         $validator = Validator::make($request->all(), [
             'id'   => 'required|exists:brands,id'
