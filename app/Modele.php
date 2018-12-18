@@ -20,4 +20,8 @@ class Modele extends Model
         return $this->belongsTo('App\Brand');
     }
 
+    //Return the products of the modele
+    public function products() {
+        return $this->hasMany('App\Product');
+    }
 }

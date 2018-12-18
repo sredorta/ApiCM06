@@ -22,6 +22,7 @@ Route::group(['middleware' => 'any'], function ($router) {
     Route::get('auth/lang/any', 'AccountController@language');
     Route::post('brands', 'BrandController@getAll');
     Route::post('models', 'ModeleController@getAll');
+    Route::post('products', 'ProductController@getAll');
 });
 
 //Only if we are not loggedIn
@@ -68,6 +69,9 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::post('models/create', 'ModeleController@create');
     Route::post('models/update', 'ModeleController@update');
     Route::post('models/delete', 'ModeleController@delete');
+    Route::post('products/create', 'ProductController@create');
+    Route::post('products/update', 'ProductController@update');
+    Route::post('products/delete', 'ProductController@delete');
 });
 
 

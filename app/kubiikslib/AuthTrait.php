@@ -287,7 +287,8 @@ trait AuthTrait {
       $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
       
       $user = User::find($payload->get('user_id'));
-      $user->account = Account::find($payload->get('account_id'))->access;
+      if ($user)
+        $user->account = Account::find($payload->get('account_id'))->access;
 /*      $avatar = $user->attachments()->where('title','avatar')->get()->first();
       if ($avatar) {
         if ($avatar->thumbs()->get()->count() == 0)
