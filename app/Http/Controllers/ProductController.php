@@ -130,17 +130,17 @@ class ProductController extends Controller
     //Delete
     public function delete(Request $request) {
         $validator = Validator::make($request->all(), [
-            'id'   => 'required|exists:brands,id'
+            'id'   => 'required|exists:products,id'
         ]);      
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
-        $brand = Brand::find($request->get("id"));
+        $product = Product::find($request->get("id"));
         //Delete all attachments and thumbs
-        foreach($brand->attachments()->get() as $attachment) {
+        foreach($product->attachments()->get() as $attachment) {
             $attachment->remove();
         }
-        $brand->delete();
+        $product->delete();
         return response()->json([],204);
     }   
 
