@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Config;
 
 class Thumb extends Model
 {
-    //
-    public $guarded = []; //Allow all fields as fillable
+    public $timestamps = false;
+
+    protected $guarded = []; //Allow all fields as fillable
+    protected $hidden = ['attachment_id','id'];
 
     public function attachment() {
         return $this->belongsTo('App\Attachment');

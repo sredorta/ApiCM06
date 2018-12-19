@@ -14,7 +14,8 @@ use finfo;
 
 class Attachment extends Model
 {
-    public $guarded = []; //Allow all fields as fillable
+    protected $guarded = []; //Allow all fields as fillable
+    protected $hidden = ['attachable_type','attachable_id'];
 
     private $myFile = null;
 
@@ -26,82 +27,58 @@ class Attachment extends Model
         return $this->hasMany('App\Thumb');
     }
 
-    //Gets file extension
-    private function getFileExtension($filename) {
-        return substr($filename, strrpos($filename, '.')+1); 
+    //Returns the extension of the file depending on the mime
+    private function getBase64Extension($base64) {
+        //All images are given in jpeg format by front-end
+        if (preg_match('/image\/jpeg/', $base64)) {
+            return 'jpg';
+        }
+        //TODO add documents and other types
+    }
+    private function getFileMime() {
+        return Storage::disk('public')->mimeType('/uploads/' . $this->file_name);
     }
 
     //Get URL of file
-    public function getUrl($default = false) {
-        if (!$default) {
-            return Storage::disk('public')->url('/uploads/' . $this->file_name);
-        } else {
-            return Storage::disk('public')->url('/defaults/' . $this->file_name);
-        }
+    private function getFileUrl() {
+        return Storage::disk('public')->url('/uploads/' . $this->file_name);
     }
 
-    //Expects a decoded base64 file and returns the mime type
-    private function getMimeType($default = false) {
-        if (!$default){
-            return Storage::disk('public')->mimeType('/uploads/' . $this->file_name);
-        } else {
-            return Storage::disk('public')->mimeType('/defaults/' . $this->file_name);
-        }
+    //Get file size
+    private function getFileSize() {
+        return Storage::disk('public')->size('/uploads/' . $this->file_name);
     }
 
-    //Store the file uploaded
-    public function uploadFile(UploadedFile $file) {
-        $file = $file->storePublicly('uploads', ['disk'=> 'public']);
-        $this->file_name = basename($file);
-        $this->file_extension = $this->getFileExtension($this->file_name);
-        $this->file_size =  Storage::disk('public')->size('/uploads/' . $this->file_name);
-        $this->url = $this->getUrl();
-        $this->mime_type = $this->getMimeType();
-        $this->myFile = $file;
-        return $this;
+    //Store the file from a base64
+    public function storeBase64($base64) {
+        list($baseType, $image) = explode(';', $base64);
+        list(, $image) = explode(',', $image);
+        $image = base64_decode($image);
+        $extension = $this->getBase64Extension($baseType);
+        $imageName = rand(111111111, 999999999) . '.' . $extension;
+        $exists = Storage::disk('public')->exists('uploads/'.$imageName);
+        //Make sure it doesn't exist already
+        while ($exists) {
+            $imageName = rand(111111111, 999999999) . '.jpg';
+        }
+        $p = Storage::disk('public')->put('uploads/' . $imageName, $image, 'public');
+        if (!$p) {
+            return response()->json(['response'=>'error', 'message'=>__('attachment.save_error')], 400);
+        }     
+        $this->file_name = $imageName;
+        $this->file_extension = $extension;
+        $this->mime_type = $this->getFileMime();
+        $this->url = $this->getFileUrl();
+        $this->file_size = $this->getFileSize();
     }
+ 
 
-    //In case input file is null we get the default file (this works for avatar, product...)
-    public function getDefault($default) {
-        switch ($default) {
-            case "avatar":
-                $file = '/defaults/userdefault.jpg';
-                break;
-            case "brand":
-                $file = '/defaults/no-photo-available.jpg';
-                break;    
-            default:
-                $file = null;
-        }
-        if ($file !== null) {
-            $this->myFile = $file;
-            $this->file_name = basename($file);
-            $this->file_extension = $this->getFileExtension($this->file_name);
-            $this->file_size =  Storage::disk('public')->size('/defaults/' . $this->file_name);
-            $this->url = $this->getUrl(true);
-            $this->mime_type = $this->getMimeType(true);
-        return $this;        
-        } else {
-            return null;
-        }
-    }
-
-    public function getTargetFile($file, $default) {
-        if($file !== null) {
-            $this->uploadFile($file); //Automatically fills file_name, file_extension, file_size, url
-        } else {
-            $result = $this->getDefault($default); //Get default file and fills file_name...
-            if ($result == null) {
-                return ['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])];
-            }      
-        }
-    }
 
     //Returns the file path from the public disk
     public function getPath() {
         return str_replace(Storage::disk('public')->url(''), '', $this->url);
     }
-
+    //Returns the relative path of the file
     public function getRelativePath() {
         $str = str_replace(Storage::disk('public')->url(''), '', $this->url);
         $str = str_replace($this->file_name, '', $str);
@@ -110,14 +87,14 @@ class Attachment extends Model
 
     //Create thumbnails if is image and if not defaults
     private function createThumbs() {
-        if (preg_match('/image/', $this->mime_type) && !preg_match('/\/defaults\//',$this->url)) {
+        if (preg_match('/image/', $this->mime_type)) {
             Thumb::add($this->id);
         }
     }
 
     //Save the register and create the thumbnails if required
     public function save(array $options = []) {
-        if (strpos($this->mime_type, 'image') !== false) {
+/*        if (preg_match('/image/', $this->mime_type)) {
             $this->isImage = true;
             $manager = new ImageManager(array('driver' => 'gd'));
             $image = Storage::disk('public')->get($this->myFile);
@@ -125,7 +102,7 @@ class Attachment extends Model
             //Get width and height of the image
             $this->img_width = $imageOrig->width();
             $this->img_height = $imageOrig->height();
-        }
+        }*/
         parent::save($options);
         $this->createThumbs();
     }

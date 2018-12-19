@@ -17,16 +17,16 @@ use Illuminate\Http\Request;
 // AUTH PART
 //////////////////////////////////////////////////////////////////////////////
 //Registered or not
-Route::group(['middleware' => 'any'], function ($router) {
+Route::group(['middleware' => ['any']], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
     Route::get('auth/lang/any', 'AccountController@language');
-    Route::post('brands', 'BrandController@getAll');
+    Route::get('brands', 'BrandController@getAll');
     Route::post('models', 'ModeleController@getAll');
     Route::post('products', 'ProductController@getAll');
 });
 
 //Only if we are not loggedIn
-Route::group(['middleware' => 'unregistered'], function ($router) {
+Route::group(['middleware' => ['unregistered']], function ($router) {
     Route::post('auth/login', 'AccountController@login');
     Route::post('auth/signup', 'AccountController@signup'); 
     Route::get('auth/emailvalidate', 'AccountController@emailValidate');   
@@ -35,7 +35,7 @@ Route::group(['middleware' => 'unregistered'], function ($router) {
 });
 
 //Only if we are registerd with any access
-Route::group(['middleware' => 'registered'], function ($router) {
+Route::group(['middleware' => ['registered']], function ($router) {
     Route::get('auth/lang/registered', 'AccountController@language');
     Route::post('auth/logout', 'AccountController@logout');
     Route::post('auth/update', 'AccountController@update'); 

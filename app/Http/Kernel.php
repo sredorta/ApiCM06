@@ -61,6 +61,7 @@ class Kernel extends HttpKernel
         'any' => \App\Http\Middleware\Any::class,
         'unregistered' => \App\Http\Middleware\Unregistered::class,
         'registered' => \App\Http\Middleware\Registered::class,
-        'admin' => \App\Http\Middleware\Admin::class        
+        'admin' => \App\Http\Middleware\Admin::class,
+        // 'cors' => \App\Http\Middleware\Cors::class     
     ];
 }

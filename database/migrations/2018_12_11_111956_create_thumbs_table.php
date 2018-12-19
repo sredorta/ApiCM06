@@ -22,7 +22,6 @@ class CreateThumbsTable extends Migration
             $table->integer('width')->unsigned();     //Type if is document or image...
             $table->integer('height')->unsigned();
             $table->integer('file_size')->unsigned();            
-            $table->timestamps();
         });
     }
 

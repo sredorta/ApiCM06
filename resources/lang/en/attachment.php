@@ -6,6 +6,6 @@ return [
     'wrong_id' => 'Could not find :type with id :id',
     'default' => 'Default attachment :default not found',
     'failed' => 'A problem occurred during the file processing',
-    'already' => 'A document :title already exists'
-
+    'already' => 'A document :title already exists',
+    'save_error' => 'The file could not be saved'
 ];

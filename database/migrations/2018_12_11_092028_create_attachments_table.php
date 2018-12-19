@@ -21,9 +21,7 @@ class CreateAttachmentsTable extends Migration
             $table->string('alt_text',100)->default("Alt text");
             $table->string('title',100)->nullable(true)->default(null);
             $table->string('description',200)->nullable(true)->default(null);
-            $table->boolean('isImage');
-            $table->integer('img_width')->unsigned()->default(0);
-            $table->integer('img_height')->unsigned()->default(0);
+            $table->string('type',100);
             $table->string('mime_type',100);     //Type if is document or image...
             $table->string('file_name',500);
             $table->string('file_extension',50);
