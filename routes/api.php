@@ -22,7 +22,7 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('auth/lang/any', 'AccountController@language');
     Route::get('brands', 'BrandController@getAll');
     Route::post('models', 'ModeleController@getAll');
-    Route::post('products', 'ProductController@getAll');
+    Route::get('products', 'ProductController@getAll');
 });
 
 //Only if we are not loggedIn

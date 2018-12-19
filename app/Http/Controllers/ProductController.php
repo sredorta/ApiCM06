@@ -18,35 +18,49 @@ class ProductController extends Controller
         //Dump all product with attachments
         $attachments = [];
         foreach ($product->attachments()->where('type','gallery')->get() as $attachment) {
-            array_push($attachments, $attachment->with('thumbs')->get()->toArray());
+            //Convert thumbs by indexing by size
+            $mythumbs = [];
+            foreach ($attachment->thumbs()->get() as $thumb) {
+                $mythumbs[$thumb->size] = $thumb->toArray();
+                unset($mythumbs[$thumb->size]['size']);
+            }
+            $attachment->sizes = $mythumbs;
+            array_push($attachments, $attachment->toArray());
         }
+        //if (array_key_exists(0,$attachments))
         $product->images = $attachments;
-//        dd($product->toArray());
+        $model = $product->modele;
+        $product->model = $model->name;
+        $product->brand = $model->brand->name;
+        $product->model_id = $product->modele->id;
+        $product->brand_id = $model->brand->id;
+        unset($product->modele);
+        unset($product->modele_id);
+        /*dd($product->toArray());*/
+        //    $product->brand = $product->
         return $product;        
     }
 
-    //Return our messages
+    //Return all products
     public function getAll(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'size'   => 'in:full,large,big,medium,small,thumbnail,tinythumbnail',
-        ]);
         $result = [];
-        foreach (Brand::orderBy('name')->get() as $brand) {
-            array_push($result, $this->outputBrand($brand, $request->size));
+        foreach (Product::all() as $product) {
+            array_push($result, $this->outputProduct($product));
         }
         return response()->json($result,200);
     }
 
+
+    //Create a product
     public function create(Request $request) {
-        //$request->images = json_decode($request->images);
         $validator = Validator::make($request->all(), [
             'model_id'      => 'required|exists:modeles,id',
             'title'         => 'required|min:2|max:100',
-            'description'   => 'required|min:2|max:500',
+            'description'   => 'nullable|min:2|max:500',
             'price'         => 'required|numeric|min:0',
-            'discount'      => 'required|numeric|min:0|max:'.$request->price,
+            'discount'      => 'nullable|numeric|min:0|max:'.$request->price,
             'stock'         => 'required|numeric|min:0',
-            'isVehicle'     => 'in:0,1,true,false',
+            'isVehicle'     => 'required|boolean',
             "images"        => 'nullable|array',
             "images.*"      => 'required_with:images|regex:/data:.*;base64/' 
         ]);
@@ -54,14 +68,12 @@ class ProductController extends Controller
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }     
 
-        if ($request->isVehicle == "false") $request->isVehicle = false;
-        else $request->isVehicle = true;
-        $product = Product::create(['modele_id'=> intval($request->model_id), 
+        $product = Product::create(['modele_id'=> $request->model_id, 
                                     'title' => $request->title,
                                     'description' => $request->description,
-                                    'price' => intval($request->price),
-                                    'discount' => intval($request->discount),
-                                    'stock' => intval($request->stock),
+                                    'price' => $request->price,
+                                    'discount' => $request->discount,
+                                    'stock' => $request->stock,
                                     'isVehicle' => $request->isVehicle]);
         //Now add the attachments
         foreach ($request->images as $base64) {
@@ -70,8 +82,6 @@ class ProductController extends Controller
             $attachment->attachable_type = Product::class;
             $attachment->storeBase64($base64); 
             $attachment->alt_text ="Photo " . $product->title;
-            //$attachment->title = "No title";
-            //$attachment->description = "No description";
             $attachment->type = "gallery";  //Set type of attachment to gallery
             $attachment->save();
         }
