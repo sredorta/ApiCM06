@@ -65,7 +65,7 @@ class Thumb extends Model
             }
             $image = Thumb::resizeImage($imageOrig,$size_value);
 
-            $stream = $image->stream('jpg',100);
+            $stream = $image->stream('png');
             $path = $attachment->getRelativePath() . $size_text . "/" . $attachment->file_name;
             $url = Storage::disk('public')->url($path);
             Storage::disk('public')->put($path, $stream);
