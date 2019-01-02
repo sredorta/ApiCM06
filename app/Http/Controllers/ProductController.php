@@ -76,14 +76,16 @@ class ProductController extends Controller
                                     'stock' => $request->stock,
                                     'isVehicle' => $request->isVehicle]);
         //Now add the attachments
-        foreach ($request->images as $base64) {
-            $attachment = new Attachment;
-            $attachment->attachable_id = $product->id;
-            $attachment->attachable_type = Product::class;
-            $attachment->storeBase64($base64); 
-            $attachment->alt_text ="Photo " . $product->title;
-            $attachment->type = "gallery";  //Set type of attachment to gallery
-            $attachment->save();
+        if (!is_null($request->images)) {
+            foreach ($request->images as $base64) {
+                $attachment = new Attachment;
+                $attachment->attachable_id = $product->id;
+                $attachment->attachable_type = Product::class;
+                $attachment->storeBase64($base64); 
+                $attachment->alt_text ="Photo " . $product->title;
+                $attachment->type = "gallery";  //Set type of attachment to gallery
+                $attachment->save();
+            }
         }
 
        //We now create the Attachable with the image uploaded
@@ -93,38 +95,46 @@ class ProductController extends Controller
     //TODO !!!!!!
     public function update(Request $request) {
         $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:brands,id',
-            'name'   => 'required|unique:brands,name,'.$request->id.',id|min:2|max:100',
-            'image' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',
-            'size' => 'in:full,large,big,medium,small,thumbnail,tinythumbnail'
+            'id'            => 'required|exists:products,id',
+            'title'         => 'required|min:2|max:100',
+            'description'   => 'nullable|min:2|max:500',
+            'price'         => 'required|numeric|min:0',
+            'discount'      => 'nullable|numeric|min:0|max:'.$request->price,
+            'stock'         => 'required|numeric|min:0',
+            'isVehicle'     => 'required|boolean',
+            "images"        => 'nullable|array',
+            "images.*"      => 'required_with:images|regex:/data:image\/png;base64/' 
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }               
             
-        $brand = Brand::find($request->id);
-        $brand->name = $request->name;
-        $brand->update();
+        $product = Product::find($request->id);
+        $product->title         = $request->title;
+        $product->description   = $request->description;
+        $product->price         = $request->price;
+        $product->discount      = $request->discount;
+        $product->stock         = $request->stock;
+        $product->isVehicle     = $request->isVehicle;
+        $product->update();
 
-        if ($request->image !== null) {
-            //Delete previous attachment
-            foreach($brand->attachments()->get() as $attachment) {
-                $attachment->remove();
-            }
-            //We now create the Attachable with the image uploaded
-            $attachment = new Attachment;
-            $attachment->attachable_id = $brand->id;
-            $attachment->attachable_type = Brand::class;
-            $response = $attachment->getTargetFile($request->file('image'), "brand");
-            if ($response !== null) {
-                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
-            }
-            $attachment->alt_text = "Logo marque";
-            $attachment->title = "No title";
-            $attachment->description = "No description";
-            $attachment->save(); //save and generate thumbs
+        //Delete previous attachment
+        foreach($product->attachments()->get() as $attachment) {
+            $attachment->remove();
         }
-       return response()->json($this->outputBrand($brand, $request->size),200);  
+        //Now add the attachments
+        if (!is_null($request->images)) {
+                foreach ($request->images as $base64) {
+                    $attachment = new Attachment;
+                    $attachment->attachable_id = $product->id;
+                    $attachment->attachable_type = Product::class;
+                    $attachment->storeBase64($base64); 
+                    $attachment->alt_text ="Photo " . $product->title;
+                    $attachment->type = "gallery";  //Set type of attachment to gallery
+                    $attachment->save();
+                }
+        }      
+        return response()->json($this->outputProduct($product),200);  
     }
 
     //Delete

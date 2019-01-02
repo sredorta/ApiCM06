@@ -55,7 +55,6 @@ class BrandController extends Controller
             $attachment->alt_text = "Logo " . $brand->name;
             $attachment->type = "logo";  //Set type of attachment to logo
             $attachment->save();
-            //dd($attachment->toArray());
        }
        return response()->json($this->outputBrand($brand),200);  
     }
