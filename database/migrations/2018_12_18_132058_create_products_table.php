@@ -17,8 +17,8 @@ class CreateProductsTable extends Migration
             $table->increments('id');
             $table->string('title',100);
             $table->string('description',500)->nullable();
-            $table->integer('price')->unsigned();
-            $table->integer('discount')->unsigned()->default(0);
+            $table->float('price',8,2)->unsigned();
+            $table->float('discount',8,2)->unsigned()->default(0);
             $table->integer('stock')->unsigned();
             $table->boolean('isVehicle');
             $table->integer('modele_id')->unsigned();

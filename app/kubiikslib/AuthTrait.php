@@ -46,6 +46,32 @@ trait AuthTrait {
       return 'toto';
   }
 
+  private function outputUser($user) {
+    //Dump all product with attachments
+    $attachments = [];
+    foreach ($user->attachments()->where('type','avatar')->get() as $attachment) {
+        //Convert thumbs by indexing by size
+        $mythumbs = [];
+        foreach ($attachment->thumbs()->get() as $thumb) {
+            $mythumbs[$thumb->size] = $thumb->toArray();
+            unset($mythumbs[$thumb->size]['size']);
+        }
+        $attachment->sizes = $mythumbs;
+        array_push($attachments, $attachment->toArray());
+    }
+    if (array_key_exists(0,$attachments))
+        $user->avatar = $attachments[0];
+    return $user;        
+}
+
+  public function getAll(Request $request) {
+    $result = [];
+    foreach (User::orderBy('lastName')->get() as $user) {
+        array_push($result, $this->outputUser($user));
+    }
+    return response()->json($result,200);
+  }
+
   /////////////////////////////////////////////////////////////////////////////////////////
   //
   //  signup:
@@ -65,7 +91,7 @@ trait AuthTrait {
             'lastName' => 'required|min:2',
             'mobile' => 'required|min:10|max:10',
             'password'=> 'required|min:4',
-            'avatar' => 'nullable|mimes:jpeg,jpg,bmp,png,gif,svg|max:2048',   //Set it to nullable after debug
+            'avatar' => 'nullable|regex:/data:image\/png;base64/'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          
@@ -92,17 +118,16 @@ trait AuthTrait {
         ]);
 
         //We now create the Attachable with the image uploaded
-/*        $attachment = new Attachment;
-        $attachment->attachable_id = $user->id;
-        $attachment->attachable_type = User::class;
-        $response = $attachment->getTargetFile($request->file('avatar'), "avatar");
-        if ($response !== null) {
-            return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $request->default])], 400);
-        }
-        $attachment->alt_text = "avatar";
-        $attachment->title = "avatar";
-        $attachment->save(); //save and generate thumbs
-*/
+        if ($request->avatar) {
+            $attachment = new Attachment;
+            $attachment->attachable_id = $user->id;
+            $attachment->attachable_type = User::class;
+            $attachment->storeBase64($request->avatar); 
+            $attachment->alt_text = "Avatar " . $user->firstName;
+            $attachment->type = "avatar";  //Set type of attachment to logo
+            $attachment->save();
+       }
+
         //SECOND: we create the standard User (account)
         $account = new Account;
         $account->key = Helper::generateRandomStr(30);

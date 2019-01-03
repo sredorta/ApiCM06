@@ -30,5 +30,8 @@ class User extends Model
     public function accounts() {
         return $this->hasMany('App\Account');
     }
-
+    //Return the attachments if any
+    public function attachments() {
+        return $this->morphMany(Attachment::class,'attachable');
+    }
 }
