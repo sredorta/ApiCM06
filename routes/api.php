@@ -55,7 +55,8 @@ Route::group(['middleware' => ['registered']], function ($router) {
 Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::get('auth/lang/admin', 'AccountController@language');
     Route::post('auth/account/create', 'AccountController@addAccount');         //Adds accounts to user
-    Route::delete('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
+    Route::post('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
+    Route::post('auth/user/delete', 'AccountController@deleteUser');
     Route::get('users', 'AccountController@getAll');
     //Route::post('auth/account/toggle', 'AccountController@toggleAccount');      //toggles Pré-inscrit to Membre
 //    Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id

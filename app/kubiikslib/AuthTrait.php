@@ -61,6 +61,7 @@ trait AuthTrait {
     }
     if (array_key_exists(0,$attachments))
         $user->avatar = $attachments[0];
+    $user->isAdmin = $user->accounts()->where('access', Config::get('constants.ACCESS_ADMIN'))->get()->count();
     return $user;        
 }
 
@@ -564,7 +565,8 @@ trait AuthTrait {
     //
     ////////////////////////////////////////////////////////////////////////////////////////
     //Delete profile and all associated data
-    public function delete(Request $request) { 
+    public function deleteAuth(Request $request) { 
+        //TODO We need here to make sure that the delete is not the last Admin !!!!
         //Check that user doesn't have any product assigned
         /*if (User::find($request->get('myUser'))->products()->count()>0) {
             return response()->json(["response" => "error", "message"=>"owning_products"],400);
@@ -576,6 +578,37 @@ trait AuthTrait {
         return response()->json([],204); 
     }    
 
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  delete:
+    //
+    //  Invalidates the token and deletes all data of a user and the associated data
+    //  You need to be registered to be able to delete it and some cases will prevent deletion
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+    //Delete profile and all associated data
+    public function deleteUser(Request $request) { 
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+        //Check that user doesn't have any product assigned
+        /*if (User::find($request->get('myUser'))->products()->count()>0) {
+            return response()->json(["response" => "error", "message"=>"owning_products"],400);
+        }*/
+        //Invalidate the token
+        $user = User::find($request->get('myUser'));
+        //Check that we are not trying to delete ourselves
+        if ($user->id == $request->id) {
+            return response()->json(['response' => 'error','message' => __('auth.delete_self')], 400);
+        }
+        //Do the deletion
+        //TODO override user delete and delete all accounts and attachments !!!
+        User::find($request->id)->delete();
+        //Invalidate the token
+        return response()->json([],204); 
+    } 
+
     /////////////////////////////////////////////////////////////////////////////////////////
     //
     //  addAccount:
@@ -586,7 +619,7 @@ trait AuthTrait {
     ////////////////////////////////////////////////////////////////////////////////////////
     public function addAccount(Request $request) {    
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|numeric',
+            'id' => 'required|exists:users,id',
             'access' => 'required|string'
         ]);
         if ($validator->fails()) {
@@ -596,10 +629,8 @@ trait AuthTrait {
         if (!in_array($request->access, Config::get('constants.ACCESS_AVAILABLE'))) {
             return response()->json(['response' => 'error','message' => __('auth.account_not_available')], 400);
         }
-        $user = User::find($request->user_id);
-        if ($user === null) {
-            return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
-        }
+        $user = User::find($request->id);
+
         //Check that user does not already have this access
         if ($user->accounts()->where('access', $request->access)->first() !== null) {
             return response()->json(['response' => 'error','message' => __('auth.account_already')], 400);
@@ -612,14 +643,10 @@ trait AuthTrait {
         $account->access = $request->access;
         $user->accounts()->save($account);
 
-        //Add notification to user
-        $notification = new Notification;
-        $notification->text = __('notification.account_added', ['account'=>$request->access]);
-        $user->notifications()->save($notification);
         //Send email 
         $data = ['html' => "<div><h2>" . __('email.account_add_title', ['account'=>$request->access] ) . "</h2>
         <p>". __('email.account_add_text1') . "<span style=\"font-weight:bold\">". $pass . "</span></p>
-        <p>" . __('email.account_add_text2', ['account'=>$request->access]) .  $request->access . "</p>
+        <p>" . __('email.account_add_text2', ['account'=>$request->access]) . "</p>
         </div>"];
         $this->sendEmail($user->email, __('email.account_add_subject', ['account'=>$request->access]), $data);
       
@@ -637,7 +664,7 @@ trait AuthTrait {
     ////////////////////////////////////////////////////////////////////////////////////////
     public function deleteAccount(Request $request) {    
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|numeric',
+            'id' => 'required|exists:users,id',
             'access' => 'required|string'
         ]);
         if ($validator->fails()) {
@@ -647,10 +674,8 @@ trait AuthTrait {
         if (!in_array($request->access, Config::get('constants.ACCESS_AVAILABLE'))) {
             return response()->json(['response' => 'error','message' => __('auth.account_not_available')], 400);
         }
-        $user = User::find($request->user_id);
-        if ($user === null) {
-            return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
-        }
+        $user = User::find($request->id);
+
         //Check that user does have this access
         $account = $user->accounts()->where('access', $request->access)->get();
         if ($account->count() === 0) {
@@ -660,9 +685,9 @@ trait AuthTrait {
         $account->last()->delete();
 
         //Add notification to user
-        $notification = new Notification;
+        /*$notification = new Notification;
         $notification->text = __('notification.account_deleted', ['account'=>$request->access]);
-        $user->notifications()->save($notification);
+        $user->notifications()->save($notification);*/
    
         //Send email 
         $data = ['html' => "<div><h2>" . __('email.account_remove_title', ['account'=>$request->access] ) . "</h2>
@@ -682,15 +707,15 @@ trait AuthTrait {
     //  Only admins can do this
     //
     ////////////////////////////////////////////////////////////////////////////////////////
-    public function toggleAccount(Request $request) {    
+/*    public function toggleAccount(Request $request) {    
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|numeric'
+            'id' => 'required|numeric'
         ]);
         if ($validator->fails()) {
             return response()->json($validator->errors()->first(),400);
         }
 
-        $user = User::find($request->user_id);
+        $user = User::find($request->id);
         if ($user === null) {
             return response()->json(['response' => 'error','message' => __('auth.user_not_found')], 400);
         }
@@ -730,7 +755,7 @@ trait AuthTrait {
             return response()->json(['response' => 'error','message' => __('auth.account_toggle')], 400);
         }
 
-    }
+    }*/
 
     /////////////////////////////////////////////////////////////////////////////////////////
     //

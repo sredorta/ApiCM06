@@ -42,6 +42,7 @@ return [
     'account_already'   => 'The user already have this account!',
     'account_not_found' => 'The user does not have this account!',
     'account_toggle' => 'Account toggling failed, please verify accounts of user',
+    'delete_self'    => "You cannot remove your own account from the admin interface",
     'test' => 'test in english. Well done :param'
 
 ];

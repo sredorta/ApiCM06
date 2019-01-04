@@ -40,6 +40,6 @@ return [
     'account_already'   => "L'utilizateur il à déjà ce compte",
     'account_not_found' => "L'utilizateur n'a pas ce compte",
     'account_toggle' => "Le compte de l'utilizateur n'a pas pu etre changé, verfier les comptes de l'utilizateur",
-
+    'delete_self'    => "Vous ne pouvez pas supprimer votre propre compte depuis l'interface administrateur",
     'test' => 'test en francais. Bien fait :param'
 ];
