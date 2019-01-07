@@ -26,8 +26,8 @@ class BrandController extends Controller
         if (array_key_exists(0,$attachments))
             $brand->image = $attachments[0];
         //Output associated models    
-        $brand->models = $brand->modeles()->pluck('id')->toArray();   
-         
+        //$brand->models = $brand->modeles()->pluck('id')->toArray();   
+
         return $brand;        
     }
 

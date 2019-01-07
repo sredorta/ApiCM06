@@ -15,5 +15,5 @@ return [
     'ACCESS_ADMIN' => 'Admin',
     'ACCESS_AVAILABLE' => ['Membre', 'Admin'],
     'LANGUAGES' => ['en', 'fr'],         //Supported languages
-    'THUMBS' => ['full' => 1600, 'large'=> 1024, 'big' => 768, 'medium' => 360 , 'small' => 150, 'thumbnail'=>100, 'tinythumbnail' => 50 ]
+    'THUMBS' => ['full' => 900, 'large'=> 700, 'big' => 500, 'medium' => 350 , 'small' => 200, 'thumbnail'=>100, 'tinythumbnail' => 50 ]
 ];
