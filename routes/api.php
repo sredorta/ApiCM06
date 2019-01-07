@@ -21,7 +21,7 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('auth/user', 'AccountController@getAuthUser');
     Route::get('auth/lang/any', 'AccountController@language');
     Route::get('brands', 'BrandController@getAll');
-    Route::post('models', 'ModeleController@getAll');
+    Route::get('models', 'ModeleController@getAll');
     Route::get('products', 'ProductController@getAll');
 });
 

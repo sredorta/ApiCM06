@@ -23,11 +23,14 @@ class ModeleController extends Controller
         return response()->json($modele,200);  
     }
 
-    public function getAll(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'id'   => 'required|exists:brands,id'
-        ]);
-        return response()->json(Brand::find($request->id)->modeles()->orderBy('name')->get(),200);
+    public function getAll(Request $request) {          
+        $result = [];
+        foreach(Brand::with('modeles')->get() as $brand) {
+            foreach($brand->modeles()->get() as $modele) {
+                array_push($result, $modele);
+            }
+        }
+        return response()->json($result,200);
     }
 
     //Delete
