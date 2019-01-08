@@ -23,6 +23,7 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('brands', 'BrandController@getAll');
     Route::get('models', 'ModeleController@getAll');
     Route::get('products', 'ProductController@getAll');
+    Route::post('product', 'ProductController@get');
 });
 
 //Only if we are not loggedIn

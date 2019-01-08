@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Product;
 use App\Attachment;
+use App\brand;
 use App\Thumb;
 use Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Intervention\Image\ImageManager;
+use Illuminate\Support\Facades\Config;
 
 class ProductController extends Controller
 {
@@ -27,11 +29,14 @@ class ProductController extends Controller
             $attachment->sizes = $mythumbs;
             array_push($attachments, $attachment->toArray());
         }
+
+
         //if (array_key_exists(0,$attachments))
         $product->images = $attachments;
         $model = $product->modele;
         $product->model = $model->name;
         $product->brand = $model->brand->name;
+        $product->brand_url = Brand::find($model->brand)->first()->attachments()->first()->thumbs()->where('size','tinythumbnail')->first()->toArray()['url'];
         $product->model_id = $product->modele->id;
         $product->brand_id = $model->brand->id;
         unset($product->modele);
@@ -49,7 +54,16 @@ class ProductController extends Controller
         }
         return response()->json($result,200);
     }
-
+    //Return all products
+    public function get(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id'            => 'required|exists:products,id' 
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        } 
+        return response()->json($this->outputProduct(Product::find($request->id)),200);
+    }
 
     //Create a product
     public function create(Request $request) {
@@ -92,7 +106,6 @@ class ProductController extends Controller
        return response()->json($this->outputProduct($product),200);  
     }
 
-    //TODO !!!!!!
     public function update(Request $request) {
         $validator = Validator::make($request->all(), [
             'id'            => 'required|exists:products,id',
