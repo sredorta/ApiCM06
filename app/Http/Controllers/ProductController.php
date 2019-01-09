@@ -36,7 +36,11 @@ class ProductController extends Controller
         $model = $product->modele;
         $product->model = $model->name;
         $product->brand = $model->brand->name;
-        $product->brand_url = Brand::find($model->brand)->first()->attachments()->first()->thumbs()->where('size','tinythumbnail')->first()->toArray()['url'];
+        if (Brand::find($model->brand)->first()->attachments()->get()->count()>0) {
+            $product->brand_url = Brand::find($model->brand)->first()->attachments()->first()->thumbs()->where('size','tinythumbnail')->first()->toArray()['url'];
+        } else {
+            $product->brand_url = "";
+        }
         $product->model_id = $product->modele->id;
         $product->brand_id = $model->brand->id;
         unset($product->modele);
