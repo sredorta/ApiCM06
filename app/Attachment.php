@@ -30,8 +30,8 @@ class Attachment extends Model
     //Returns the extension of the file depending on the mime
     private function getBase64Extension($base64) {
         //All images are given in jpeg   format by front-end
-        if (preg_match('/image\/png/', $base64)) {
-            return 'png';
+        if (preg_match('/image\/jpeg/', $base64)) {
+            return 'jpg';
         }
         //TODO add documents and other types
     }
@@ -59,7 +59,7 @@ class Attachment extends Model
         $exists = Storage::disk('public')->exists('uploads/'.$imageName);
         //Make sure it doesn't exist already
         while ($exists) {
-            $imageName = rand(111111111, 999999999) . '.png';
+            $imageName = rand(111111111, 999999999) . '.jpg';
         }
         $p = Storage::disk('public')->put('uploads/' . $imageName, $image, 'public');
         if (!$p) {

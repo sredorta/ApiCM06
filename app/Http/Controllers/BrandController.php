@@ -43,7 +43,7 @@ class BrandController extends Controller
     public function create(Request $request) {
         $validator = Validator::make($request->all(), [
             'name'   => 'required|unique:brands,name|min:2|max:100',
-            'image' => 'nullable|regex:/data:image\/png;base64/'
+            'image' => 'nullable|regex:/data:image\/jpeg;base64/'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
@@ -66,7 +66,7 @@ class BrandController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:brands,id',
             'name'   => 'required|unique:brands,name,'.$request->id.',id|min:2|max:100',
-            'image' => 'nullable|regex:/data:image\/png;base64/'
+            'image' => 'nullable|regex:/data:image\/jpeg;base64/'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);

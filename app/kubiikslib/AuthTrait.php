@@ -92,7 +92,7 @@ trait AuthTrait {
             'lastName' => 'required|min:2',
             'mobile' => 'required|min:10|max:10',
             'password'=> 'required|min:4',
-            'avatar' => 'nullable|regex:/data:image\/png;base64/'
+            'avatar' => 'nullable|regex:/data:image\/jpeg;base64/'
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);          

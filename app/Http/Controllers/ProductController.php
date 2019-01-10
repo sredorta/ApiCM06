@@ -80,7 +80,7 @@ class ProductController extends Controller
             'stock'         => 'required|numeric|min:0',
             'isVehicle'     => 'required|boolean',
             "images"        => 'nullable|array',
-            "images.*"      => 'required_with:images|regex:/data:image\/png;base64/' 
+            "images.*"      => 'required_with:images|regex:/data:image\/jpeg;base64/' 
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
@@ -120,7 +120,7 @@ class ProductController extends Controller
             'stock'         => 'required|numeric|min:0',
             'isVehicle'     => 'required|boolean',
             "images"        => 'nullable|array',
-            "images.*"      => 'required_with:images|regex:/data:image\/png;base64/' 
+            "images.*"      => 'required_with:images|regex:/data:image\/jpeg;base64/' 
         ]);
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
