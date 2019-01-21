@@ -33,7 +33,7 @@ return [
     'reset_success' => "Un nouveau mot de passe vous à été envoyé par email",
     'update_success' => "Vos modifications sont bien prises en compte",
     'update_phone_found' => "Ce numero de telephone est déjà enregistré dans le système",
-    'update_password' => "Password pas correcte",
+    'update_password' => "Votre ancien mot de passe est incorrecte",
     'update_email' => "Cet email est déjà enregistré dans le système",
     'language_unsupported' => "Cette langue n'est pas supporté",
     'account_not_available' => "Ce type de compte n'est pas supporté",
@@ -41,5 +41,6 @@ return [
     'account_not_found' => "L'utilizateur n'a pas ce compte",
     'account_toggle' => "Le compte de l'utilizateur n'a pas pu etre changé, verfier les comptes de l'utilizateur",
     'delete_self'    => "Vous ne pouvez pas supprimer votre propre compte depuis l'interface administrateur",
+    'delete_last_admin' => "Vous êtes le dernier administrateur, ce compte ne peut pas être supprimer",
     'test' => 'test en francais. Bien fait :param'
 ];

@@ -43,6 +43,8 @@ return [
     'account_not_found' => 'The user does not have this account!',
     'account_toggle' => 'Account toggling failed, please verify accounts of user',
     'delete_self'    => "You cannot remove your own account from the admin interface",
+    'delete_last_admin' => "You are the last administrator, you cannot remove this account",
+
     'test' => 'test in english. Well done :param'
 
 ];

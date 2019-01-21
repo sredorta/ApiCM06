@@ -41,6 +41,8 @@ Route::group(['middleware' => ['registered']], function ($router) {
     Route::post('auth/logout', 'AccountController@logout');
     Route::post('auth/update', 'AccountController@update'); 
     Route::delete('auth/delete', 'AccountController@delete'); 
+    Route::delete('auth/deleteAuth', 'AccountController@deleteAuth');   //Deletes auth user
+
     //Notifications part
 //    Route::post('notifications/delete', 'NotificationController@delete');
 //    Route::post('notifications/markread', 'NotificationController@markAsRead');

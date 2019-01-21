@@ -315,24 +315,16 @@ trait AuthTrait {
       $user = User::find($payload->get('user_id'));
       if ($user)
         $user->account = Account::find($payload->get('account_id'))->access;
-/*      $avatar = $user->attachments()->where('title','avatar')->get()->first();
+      $avatar = $user->attachments()->where('type','avatar')->get()->first();
       if ($avatar) {
-        if ($avatar->thumbs()->get()->count() == 0)
-            $user->avatar = ["full" => ["url"=> $avatar->url]];
-        else {
             $result = [];
             foreach ($avatar->thumbs()->get() as $thumb) {
                 $result[$thumb->size] = ["width"=> $thumb->width, "height"=>$thumb->height, "url"=>$thumb->url];
             }
             $user->avatar = $result;
-        }
       } else {
         $user->avatar = null;
       }
-      $user->notifications = $user->notifications()->where('isRead',false)->get()->count();
-      $user->messages = $user->messages()->where('isRead',false)->get()->count();
-      $user->roles = $user->roles()->get()->pluck('name');
-      $user->groups = $user->groups()->get()->pluck('name');*/
 
       return response()->json($user,200);    
   } 
@@ -414,75 +406,86 @@ trait AuthTrait {
     //
     ////////////////////////////////////////////////////////////////////////////////////////
     public function update(Request $request) {
+        $updated = false;
         $user = User::find($request->get('myUser'));
         //Update firstName if is required
         $validator = Validator::make($request->all(), [
             'firstName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
-            $user->firstName = $request->firstName;
-            $user->save();
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
+            if ($user->firstName != $request->firstName) {
+                $user->firstName = $request->firstName;
+                $user->save();
+                $updated = true;
+            }
         }
         //Update lastName if is required
         $validator = Validator::make($request->all(), [
             'lastName' => 'required|string|min:2'
         ]);        
         if (!$validator->fails()) {
-            $user->lastName = $request->lastName;
-            $user->save();
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
+            if ($user->lastName != $request->lastName) {
+                $user->lastName = $request->lastName;
+                $user->save();
+                $updated = true;
+            }
         }
-
-        //Update avatar if is required
-        $validator = Validator::make($request->all(), [
-            'avatar' => 'required_without:default|mimes:jpeg,bmp,png,gif,svg|max:2048',
-            'default' => 'required_without:avatar|boolean',
-        ]);        
-
-        if (!$validator->fails()) {
-            //Default avatar
-            if ($request->default) {
-                $default = "avatar"; //Set default avatar
-                $avatar = null;
-            }  else {
-                $default = null;
-                $avatar = $request->avatar;
-            }
-            $attachmentToDelete = $user->attachments()->where("title", "avatar")->get()->last();
-            $attachment = new Attachment;
-            $attachment->attachable_id = $user->id;
-            $attachment->attachable_type = User::class;
-            //$response = $attachment->getTargetFile($request->file('avatar'), "avatar");
-            $response = $attachment->getTargetFile($avatar, $default);
-            if ($response !== null) {
-                return response()->json(['response'=>'error', 'message'=>__('attachment.default', ['default' => $default])], 400);
-            }
-            $attachment->alt_text = "avatar";
-            $attachment->title = "avatar";
-            $attachment->save(); //save and generate thumbs
-            $attachmentToDelete->delete();
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
-
-        } 
-
         //Update mobile if is required
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric|unique:users'
         ]);       
-        if ($validator->fails()) {
-            $validatorU = Validator::make($request->all(), [
-                'mobile' => 'unique:users'
-            ]);
-            if ($validatorU->fails()) {
-                return response()->json(['response' => 'error','message' => __('auth.update_phone_found')],400);
+        if ($user->mobile != $request->mobile) {
+            if ($validator->fails()) {
+                $validatorU = Validator::make($request->all(), [
+                    'mobile' => 'unique:users'
+                ]);
+                if ($validatorU->fails()) {
+                    return response()->json(['response' => 'error','message' => __('auth.update_phone_found')],400);
+                }
+            }
+            if (!$validator->fails()) {
+                $user->mobile = $request->mobile;
+                $user->save();
+                $updated = true;
+            }  
+        }        
+        //Update email if is required and then we need to set email validated to false and logout and send email
+        //We are making simple here and just take the new email straight forward and considere it as validated    
+        if ($user->email != $request->email) {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|unique:users'
+            ]);        
+            if ($validator->fails()) {
+                $validatorU = Validator::make($request->all(), [
+                    'email' => 'unique:users'
+                ]);
+                if ($validatorU->fails()) {
+                    return response()->json(['response' => 'error','message' => __('auth.update_email')],400);
+                }
+            }
+            if (!$validator->fails()) {
+                //$user->isEmailValidated = 0;
+                //$user->emailValidationKey = $this->generateEmailKey();
+                $user->email = $request->email;
+                $user->save();
+                $updated = true;
+                //Send email with validation key
+/*                $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
+                        $user->id  .
+                        '&key=' .
+                        $user->emailValidationKey;
+                $data = ['html' => "<div><h2>" . __('email.change', ['name'=>$user->firstName]) . "</h2>
+                <p>" . __('email.confirm_line1') . "</p>
+                <p>" . __('email.confirm_line2') . "</p>
+                <a href=\"" . $key . "\">" . __('email.confirm_link') . "</a>
+                </div>"];
+                $this->sendEmail($user->email, __('email.confirm_subject'), $data);
+        
+                //Invalidate the token
+                JWTAuth::invalidate($request->bearerToken());*/
+                //return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);                
             }
         }
-        if (!$validator->fails()) {
-            $user->mobile = $request->mobile;
-            $user->save();
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
-        }  
 
         //Update password
         $validator = Validator::make($request->all(), [
@@ -491,13 +494,12 @@ trait AuthTrait {
         ]);        
         if (!$validator->fails()) {
             //Check that password old matches
-            $account = Account::find($request->get('myAccount'))->first();
+            $account = Account::all()->where("id", $request->get('myAccount'))->first();
             if (!Hash::check($request->get('password_old'), $account->password)) {
                 return response()->json(['response' => 'error','message' => __('auth.update_password')],400);
             }
             $account->password = Hash::make($request->get('password_new'), ['rounds' => 12]);
             $account->save();
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
         }  
 
         //Update language if is required
@@ -514,51 +516,41 @@ trait AuthTrait {
                 return response()->json(['response'=>'error', 'message'=>__('auth.language_unsupported')], 400);
             }
         }
-        
-        //Update email if is required and then we need to set email validated to false and logout and send email
+
+
+        //Update avatar if is required
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|unique:users'
+            'avatar' => 'regex:/data:image\/jpeg;base64/'
         ]);        
-        if ($validator->fails()) {
-            $validatorU = Validator::make($request->all(), [
-                'email' => 'unique:users'
-            ]);
-            if ($validatorU->fails()) {
-                return response()->json(['response' => 'error','message' => __('auth.update_email')],400);
+
+        if (!$validator->fails()) {
+            $attachmentToDelete = $user->attachments()->where("type", "avatar")->get()->last();
+            $attachment = new Attachment;
+            $attachment->attachable_id = $user->id;
+            $attachment->attachable_type = User::class;
+            $attachment->storeBase64($request->avatar); 
+            $attachment->alt_text = "Avatar " . $user->firstName;
+            $attachment->type = "avatar";  //Set type of attachment to logo
+            $attachment->save();
+            if ($attachmentToDelete) {
+                $attachmentToDelete->delete();
+            }
+        } 
+        //Case of reset
+        if ($request->get('avatar') == "reset") {
+            $attachmentToDelete = $user->attachments()->where("type", "avatar")->get()->last();
+            if ($attachmentToDelete) {
+                $attachmentToDelete->delete();
             }
         }
-        if (!$validator->fails()) {
-            $user->isEmailValidated = 0;
-            $user->emailValidationKey = $this->generateEmailKey();
-            $user->email = $request->email;
-            $user->save();
 
-            //Send email with validation key
-            $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
-                    $user->id  .
-                    '&key=' .
-                    $user->emailValidationKey;
-            $data = ['html' => "<div><h2>" . __('email.change', ['name'=>$user->firstName]) . "</h2>
-            <p>" . __('email.confirm_line1') . "</p>
-            <p>" . __('email.confirm_line2') . "</p>
-            <a href=\"" . $key . "\">" . __('email.confirm_link') . "</a>
-            </div>"];
-            $this->sendEmail($user->email, __('email.confirm_subject'), $data);
-    
-
-            //Invalidate the token
-            JWTAuth::invalidate($request->bearerToken());
-            return response()->json(['response' => 'success','message' => __('auth.update_success')], 200);
-            
-        }
-        //If we got here, we have bad arguments
-        return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
-
+        return response()->json(['response'=>'success', 'message'=>__('auth.update_success')], 200);
+        
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
     //
-    //  delete:
+    //  deleteAuth:
     //
     //  Invalidates the token and deletes all data of a user and the associated data
     //  You need to be registered to be able to delete it and some cases will prevent deletion
@@ -566,11 +558,12 @@ trait AuthTrait {
     ////////////////////////////////////////////////////////////////////////////////////////
     //Delete profile and all associated data
     public function deleteAuth(Request $request) { 
-        //TODO We need here to make sure that the delete is not the last Admin !!!!
-        //Check that user doesn't have any product assigned
-        /*if (User::find($request->get('myUser'))->products()->count()>0) {
-            return response()->json(["response" => "error", "message"=>"owning_products"],400);
-        }*/
+        //Check if user is last admin then we cannot remove him
+        $count = Account::where("access",Config::get('constants.ACCESS_ADMIN'))->get()->count();
+        $user = User::find($request->get('myUser'));
+        if ($user->accounts()->where("access", Config::get('constants.ACCESS_ADMIN'))->get()->count()==1 && $count<2) {
+            return response()->json(['response' => 'error','message' => __('auth.delete_last_admin')], 400);
+        }
         //Invalidate the token
         JWTAuth::invalidate($request->bearerToken());
         User::find($request->get('myUser'))->delete();
