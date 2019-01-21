@@ -24,6 +24,8 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('models', 'ModeleController@getAll');
     Route::get('products', 'ProductController@getAll');
     Route::post('product', 'ProductController@get');
+    Route::get('config', 'ConfigurationController@get');           //Get the config
+
 });
 
 //Only if we are not loggedIn
@@ -61,6 +63,8 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::post('auth/account/delete', 'AccountController@deleteAccount');    //Removes account from user
     Route::post('auth/user/delete', 'AccountController@deleteUser');
     Route::get('users', 'AccountController@getAll');
+    Route::post('config', 'ConfigurationController@set');           //Get the config
+
     //Route::post('auth/account/toggle', 'AccountController@toggleAccount');      //toggles Pré-inscrit to Membre
 //    Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id
     //PAGE HANDLING
