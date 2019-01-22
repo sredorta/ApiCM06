@@ -17,13 +17,16 @@ class ConfigurationController extends Controller
         $validator = Validator::make($request->all(), [
             'message_title'   => 'nullable|min:2|max:100',
             'message_text'    => 'nullable|min:2|max:500',
-            'address'         => 'nullable|min:2|max:500',
-            'email'           => 'nullable|email',
-            'phone'           => 'nullable|regex:/^[0-9]+$/|min:10|max:10',
-            'latitude'        => 'nullable|numeric',
-            'longitude'       => 'nullable|numeric',
-            'zoom'            => 'nullable|numeric|min:1|max:30',
-            'timetable1'      => 'nullable|min:2|max:100',
+            'delivery1'       => 'required|numeric|min:1|max:1000',
+            'delivery2'       => 'required|numeric|min:1|max:1000',
+            'delivery3'       => 'required|numeric|min:1|max:1000',
+            'address'         => 'required|min:2|max:500',
+            'email'           => 'required|email',
+            'phone'           => 'required|regex:/^[0-9]+$/|min:10|max:10',
+            'latitude'        => 'required|numeric',
+            'longitude'       => 'required|numeric',
+            'zoom'            => 'required|numeric|min:1|max:30',
+            'timetable1'      => 'required|min:2|max:100',
             'timetable2'      => 'nullable|min:2|max:100',
             'timetable3'      => 'nullable|min:2|max:100'  
 
