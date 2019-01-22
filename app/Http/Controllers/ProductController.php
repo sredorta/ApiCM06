@@ -79,6 +79,9 @@ class ProductController extends Controller
             'discount'      => 'nullable|numeric|min:0|max:'.$request->price,
             'stock'         => 'required|numeric|min:0',
             'isVehicle'     => 'required|boolean',
+            'isNew'         => 'required|boolean',
+            'weight'        => 'required|numeric|min:0',
+            'isDeliverable' => 'required|boolean',
             "images"        => 'nullable|array',
             "images.*"      => 'required_with:images|regex:/data:image\/jpeg;base64/' 
         ]);
@@ -92,7 +95,10 @@ class ProductController extends Controller
                                     'price' => $request->price,
                                     'discount' => $request->discount,
                                     'stock' => $request->stock,
-                                    'isVehicle' => $request->isVehicle]);
+                                    'isVehicle' => $request->isVehicle,
+                                    'isNew' => $request->isNew,
+                                    'isDeliverable' => $request->isDeliverable,
+                                    'weight' => $request->weight]);
         //Now add the attachments
         if (!is_null($request->images)) {
             foreach ($request->images as $base64) {
@@ -119,6 +125,9 @@ class ProductController extends Controller
             'discount'      => 'nullable|numeric|min:0|max:'.$request->price,
             'stock'         => 'required|numeric|min:0',
             'isVehicle'     => 'required|boolean',
+            'isNew'         => 'required|boolean',
+            'weight'        => 'required|numeric|min:0',
+            'isDeliverable' => 'required|boolean',
             "images"        => 'nullable|array',
             "images.*"      => 'required_with:images|regex:/data:image\/jpeg;base64/' 
         ]);
@@ -133,6 +142,9 @@ class ProductController extends Controller
         $product->discount      = $request->discount;
         $product->stock         = $request->stock;
         $product->isVehicle     = $request->isVehicle;
+        $product->isNew         = $request->isNew;
+        $product->isDeliverable = $request->isDeliverable;
+        $product->weight        = $request->weight;
         $product->update();
 
         //Delete previous attachment

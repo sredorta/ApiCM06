@@ -21,6 +21,9 @@ class CreateProductsTable extends Migration
             $table->float('discount',8,2)->unsigned()->default(0);
             $table->integer('stock')->unsigned();
             $table->boolean('isVehicle');
+            $table->boolean('isNew')->default(false);
+            $table->float('weight')->default(0.0);
+            $table->boolean('isDeliverable')->default(true);
             $table->integer('modele_id')->unsigned();
             $table->foreign('modele_id')->references('id')->on('modeles')->onDelete('cascade');  
             $table->timestamps(); 
