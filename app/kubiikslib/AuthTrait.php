@@ -313,20 +313,24 @@ trait AuthTrait {
       $payload = JWTAuth::setRequest($request)->parseToken()->getPayload();
       
       $user = User::find($payload->get('user_id'));
-      if ($user)
+      if ($user) {
         $user->account = Account::find($payload->get('account_id'))->access;
-      $avatar = $user->attachments()->where('type','avatar')->get()->first();
-      if ($avatar) {
-            $result = [];
-            foreach ($avatar->thumbs()->get() as $thumb) {
-                $result[$thumb->size] = ["width"=> $thumb->width, "height"=>$thumb->height, "url"=>$thumb->url];
+        if ($user->attachments()) { 
+            $avatar = $user->attachments()->where('type','avatar')->get()->first();
+            if ($avatar) {
+                    $result = [];
+                    foreach ($avatar->thumbs()->get() as $thumb) {
+                        $result[$thumb->size] = ["width"=> $thumb->width, "height"=>$thumb->height, "url"=>$thumb->url];
+                    }
+                    $user->avatar = $result;
+            } else {
+                $user->avatar = null;
             }
-            $user->avatar = $result;
-      } else {
-        $user->avatar = null;
+        }
+        return response()->json($user,200); 
       }
-
-      return response()->json($user,200);    
+      return response()->json(["id" => null],200); 
+         
   } 
 
   /////////////////////////////////////////////////////////////////////////////////////////
