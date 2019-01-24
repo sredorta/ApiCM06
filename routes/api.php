@@ -24,7 +24,9 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('models', 'ModeleController@getAll');
     Route::get('products', 'ProductController@getAll');
     Route::post('product', 'ProductController@get');
-    Route::get('config', 'ConfigurationController@get');           //Get the config
+    Route::get('config', 'ConfigurationController@get');            //Get the config
+    Route::post('cart/check', 'OrderController@checkCart');         //Checks cart and returns all data to update gui
+    Route::post('order/check', 'OrderController@check');            //Checks order and return data
 
 });
 
