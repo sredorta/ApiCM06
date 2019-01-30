@@ -26,13 +26,10 @@ return [
     'account_remove_subject' => "Casse Moto 06: Suppression du compte :account",
     'order_subject' => "Casse Moto 06: Détails de votre commande",
     'order_title'   => "Votre commande à bien été prise en compte",
-    'order_total'   => "Montant de votre commande : :total",
+    'order_total'   => "Montant de votre commande : :total euros",
     'order_reference' => "REFERENCE : :reference",
     'order_delivery' => "Livraison",
     'order_nodelivery' => "Sans livraison, vous passez chercher votre commande",
     "order_products" => "Articles de votre commande"
-
-
-
 
 ];

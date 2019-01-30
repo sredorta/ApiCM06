@@ -47,6 +47,8 @@ Route::group(['middleware' => ['registered']], function ($router) {
     Route::post('auth/update', 'AccountController@update'); 
     Route::delete('auth/delete', 'AccountController@delete'); 
     Route::delete('auth/deleteAuth', 'AccountController@deleteAuth');   //Deletes auth user
+    Route::get('order/getAuth', 'OrderController@getAuthOrders');       //Gets auth orders
+
 
     //Notifications part
 //    Route::post('notifications/delete', 'NotificationController@delete');
@@ -84,6 +86,9 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::post('products/create', 'ProductController@create');
     Route::post('products/update', 'ProductController@update');
     Route::post('products/delete', 'ProductController@delete');
+    Route::get('order/get', 'OrderController@getOrders');       //Gets all orders
+    Route::post('order/updatestatus', 'OrderController@updateStatus');       //Updates status
+    Route::post('order/delete', 'OrderController@deleteOrder');       //Updates status
 });
 
 

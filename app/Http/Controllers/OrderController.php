@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Configuration;
 use App\Product;
 use App\Order;
+use App\User;
 use Validator;
 
 use App\kubiikslib\EmailTrait;
@@ -182,6 +183,50 @@ class OrderController extends Controller
         return json_encode($result);        
     }
 
+    //Gets the orders related to auth user
+    public function getAuthOrders(Request $request) {
+        $user = User::find($request->get('myUser'));
+        $orders = Order::orderBy('id', 'DESC')->where("user_id", $user->id)->get();
+        return json_encode($orders);
+    }
+
+    //Gets all orders
+    public function getOrders(Request $request) {
+        $user = User::find($request->get('myUser'));
+        $orders = Order::orderBy('id', 'DESC')->get();
+        return json_encode($orders);
+    }
+
+    //Update status field
+    public function updateStatus(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:orders',
+            'status' => 'required|min:2|max:50',
+
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }
+        $order = Order::find($request->id);
+        $order->status = $request->status;
+        $order->update();
+        return response()->json($order,200);  
+
+    }
+
+    //Delete specific order
+    public function deleteOrder(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:orders'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }
+        $order = Order::find($request->id);
+        $order->delete();
+        return response()->json([],204);  
+
+    }    
 
    //Creates the order
     public function create(Request $request) {
