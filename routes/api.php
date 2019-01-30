@@ -27,6 +27,7 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::get('config', 'ConfigurationController@get');            //Get the config
     Route::post('cart/check', 'OrderController@checkCart');         //Checks cart and returns all data to update gui
     Route::post('order/check', 'OrderController@check');            //Checks order and return data
+    Route::post('order/create', 'OrderController@create');          //Creates preliminary order
 
 });
 

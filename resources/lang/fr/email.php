@@ -24,9 +24,15 @@ return [
     'account_remove_title' => "Suppressión du compte :account",
     'account_remove_text1' => "Votre compte vient d'être supprimé",
     'account_remove_subject' => "Casse Moto 06: Suppression du compte :account",
-    'account_toggle_membre_title' => "Vous êtes desormais Membre du club",
-    'account_toggle_membre_text' => "Votre inscription à été validé et vous avez access en tant que membre",
-    'account_toggle_membre_subject' => "GMA500: Votre inscription au club est validé",
+    'order_subject' => "Casse Moto 06: Détails de votre commande",
+    'order_title'   => "Votre commande à bien été prise en compte",
+    'order_total'   => "Montant de votre commande : :total",
+    'order_reference' => "REFERENCE : :reference",
+    'order_delivery' => "Livraison",
+    'order_nodelivery' => "Sans livraison, vous passez chercher votre commande",
+    "order_products" => "Articles de votre commande"
+
+
 
 
 ];

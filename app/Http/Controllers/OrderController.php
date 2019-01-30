@@ -7,9 +7,14 @@ use App\Configuration;
 use App\Product;
 use App\Order;
 use Validator;
+
+use App\kubiikslib\EmailTrait;
+
+ 
+
 class OrderController extends Controller
 {
-
+    use EmailTrait;                //Add email traits
 
     //Checks if cart is valid to update the gui
     public function checkCart(Request $request) {
@@ -73,13 +78,6 @@ class OrderController extends Controller
     }
 
 
-
-
-
-
-
-
-
     //Creates an object array with all elements for the cart
     private function _getCartResult($cart) {
         $result = [];
@@ -137,7 +135,7 @@ class OrderController extends Controller
 
     //Returns the delivery price
     private function _getDeliveryPrice($cart, $delivery) {        
-        if ($delivery == false) return 0;
+        if ($delivery === false) return 0;
         $weight = $this->_getCartWeight($cart,$delivery);
         if ($weight <= 2)  return Configuration::where('key','delivery1')->first()->value;
         if ($weight <= 10) return Configuration::where('key','delivery2')->first()->value;
@@ -165,6 +163,121 @@ class OrderController extends Controller
         }
         return false;
     }
+
+
+    //Creates an object array with all elements for the cart stored in orders
+    //It returns a json string
+    private function _cartToJson($cart) {
+        $result = [];
+        foreach($cart as $item){
+            $obj = (object)[];
+            $product = Product::find($item['id']);
+            $obj->title = $product->title;
+            $obj->price = $product->price - $product->discount;
+            $obj->weight = $product->weight;
+            $obj->quantity = $item['quantity'];
+            $obj->tprice = $obj->price * $obj->quantity;
+            array_push($result, $obj);
+        }
+        return json_encode($result);        
+    }
+
+
+   //Creates the order
+    public function create(Request $request) {
+
+        $validator = Validator::make($request->all(), [
+            'user_id'   => 'nullable|exists:users,id',
+            'firstName' => 'required|min:2|max:50',
+            'lastName' => 'required|min:2|max:50',
+            'email' => 'required|email',            
+            'mobile' => 'required|regex:/^[0-9]+$/|min:10|max:10',
+            'delivery'  => 'required|boolean',
+            'address1'  => 'required_if:delivery,true|min:2|max:200',
+            'address2'  => 'nullable|min:2|max:200',
+            'cp'        => 'required_if:delivery,==,true|regex:/^[0-9]+$/|min:5|max:5',
+            'city'      => 'required_if:delivery,==,true|min:2|max:100',
+            'cart'  => 'required|array',
+            'cart.*.id' => 'required|numeric',
+            'cart.*.title' => 'required|min:2',
+            'cart.*.quantity'=> 'required|numeric',
+            'paypalOrderId' => 'required|min:2',
+            'paypalPaymentId' => 'required|min:2'
+
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }
+        //Check that all product exists and that we got enough stock
+        $cart = $request->cart;
+        //Generate the result
+        $result = (object)[];
+        $result->price              = $this->_getCartPrice($cart);
+        $result->deliveryCost       = $this->_getDeliveryPrice($cart, $request->delivery);
+        $result->weight             = $this->_getCartWeight($cart);
+        $result->cart               = $this->_cartToJson($cart);
+        $result->total              = $result->price + $result->deliveryCost;
+      
+        $order = Order::create([
+            'user_id'           => $request->user_id,
+            'firstName'         => $request->firstName,
+            'lastName'          => $request->lastName,
+            'email'             => $request->email,            
+            'mobile'            => $request->mobile,
+            'delivery'          => $request->delivery,
+            'address1'          => $request->address1,
+            'address2'          => $request->address2,
+            'cp'                => $request->cp,
+            'city'              => $request->city,
+            'total'             => $this->_getCartPrice($cart)+$this->_getDeliveryPrice($cart, $request->delivery),
+            'deliveryCost'      => $this->_getDeliveryPrice($cart, $request->delivery),
+            'price'             => $this->_getCartPrice($cart),
+            'cart'              => $this->_cartToJson($cart),
+            'paypalOrderId'     => $request->paypalOrderId,
+            'paypalPaymentId'   => $request->paypalPaymentId
+        ]);
+        //Update the products we have
+        $this->_updateProducts($cart);
+        //Now we need to send email to user 
+        $html = "<div>
+        <h2>" . __('email.order_title') . "</h2>
+        <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
+        <h4>" . __('email.order_reference', ['reference'=>$order->paypalOrderId]) . "</h4>
+        <h4>" . __('email.order_delivery') . "</h4>";
+        if (!$order->delivery) {
+            $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
+        } else {
+            $html = $html . "<p>" . $order->address1 . "</p>
+                             <p>" . $order->address2 . "</p> 
+                             <p>" . $order->cp . "</p> 
+                             <p>" . $order->city . "</p>
+                             <p>FRANCE</p>"; 
+        }
+        $html = $html . "<h4>" . __('email.order_products') . "</h4>";
+        foreach($cart as $item) {
+            $product = Product::find($item['id']);
+            $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
+        }
+        $html = $html . "</div>";
+
+
+        $data = ['html' => $html];
+        $this->sendEmail($order->email, __('email.order_subject'), $data);
+        return response()->json($order,200);  
+    }
+
+    private function _updateProducts($cart) {
+        foreach($cart as $item){
+            $obj = (object)[];
+            $product = Product::find($item['id']);
+            $stock = $product->stock - $item['quantity'];
+            if ($stock<0) $stock = 0;
+            $product->stock = $stock;
+            $product->update();
+        }
+    }
+
+
 
 
 

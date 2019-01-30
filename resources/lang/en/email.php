@@ -24,4 +24,11 @@ return [
     'account_remove_title' => ":account account removal",
     'account_remove_text1' => "Your account has been removed",
     'account_remove_subject' => "GMA500: Removal of account :account",
+    'order_subject' => "Casse Moto 06: Your order details",
+    'order_title'   => "Your order has been submitted",
+    'order_total'   => "Total amount : :total",
+    'order_reference' => "REFERENCE : :reference",
+    'order_delivery' => "Delivery details",
+    'order_nodelivery' => "No delivery, you will pass by and pick you order",
+    "order_products" => "Details of your order"
 ];

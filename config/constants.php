@@ -4,8 +4,8 @@
 return [
     //'API_URL' => 'https://www.ecube-solutions.com/gma500laravel/public',
     //'SITE_URL' => 'https://www.ecube-solutions.com',
-    'API_URL' => 'http://localhost',  //In prod: https://www.ecube-solutions.com/gma500laravel/public
-    'SITE_URL' => 'http://localhost:4200', 
+    'API_URL' => env('APP_API_URL'),  //In prod: https://www.ecube-solutions.com/gma500laravel/public
+    'SITE_URL' => env('APP_SITE_URL'), 
     'EMAIL_FROM_ADDRESS' => 'webmaster@cassemoto06.fr',
     'EMAIL_FROM_NAME' => 'Casse moto 06',
     'EMAIL_NOREPLY' => 'no-reply@cassemoto06.fr',
