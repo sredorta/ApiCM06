@@ -48,17 +48,6 @@ Route::group(['middleware' => ['registered']], function ($router) {
     Route::delete('auth/delete', 'AccountController@delete'); 
     Route::delete('auth/deleteAuth', 'AccountController@deleteAuth');   //Deletes auth user
     Route::get('order/getAuth', 'OrderController@getAuthOrders');       //Gets auth orders
-
-
-    //Notifications part
-//    Route::post('notifications/delete', 'NotificationController@delete');
-//    Route::post('notifications/markread', 'NotificationController@markAsRead');
-//    Route::get('notifications', 'NotificationController@getAll');
-    //  auth/delete
-    //  all notifications, messages, imageables, attachables
-
-    //Document handling
-//    Route::post('attachment/create', 'AttachmentController@create');
 });
 
 //Only if we are admin
@@ -69,14 +58,6 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::post('auth/user/delete', 'AccountController@deleteUser');
     Route::get('users', 'AccountController@getAll');
     Route::post('config', 'ConfigurationController@set');           //Get the config
-
-    //Route::post('auth/account/toggle', 'AccountController@toggleAccount');      //toggles Pré-inscrit to Membre
-//    Route::delete('attachment/delete', 'AttachmentController@delete'); //Deletes a attachment by id
-    //PAGE HANDLING
-//    Route::delete('pages/delete', 'PageController@delete');
-//    Route::post('pages/create', 'PageController@create');
-    //Route::get('pages/attachments', 'PageController@getAttachments'); //MOVE ME TO ANY !!!!
-    //Route::post('pages/attachments/create', 'PageController@addAttachment');
     Route::post('brands/create', 'BrandController@create');
     Route::post('brands/update', 'BrandController@update');
     Route::post('brands/delete', 'BrandController@delete');
@@ -89,6 +70,7 @@ Route::group(['middleware' => ['registered','admin']], function ($router) {
     Route::get('order/get', 'OrderController@getOrders');       //Gets all orders
     Route::post('order/updatestatus', 'OrderController@updateStatus');       //Updates status
     Route::post('order/delete', 'OrderController@deleteOrder');       //Updates status
+    Route::get('order/getcount', 'OrderController@getCount');
 });
 
 

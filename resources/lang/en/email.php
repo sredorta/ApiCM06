@@ -30,5 +30,6 @@ return [
     'order_reference' => "REFERENCE : :reference",
     'order_delivery' => "Delivery details",
     'order_nodelivery' => "No delivery, you will pass by and pick you order",
-    "order_products" => "Details of your order"
+    "order_products" => "Details of your order",
+    "order_change_title" => "Status of your order : :status"
 ];

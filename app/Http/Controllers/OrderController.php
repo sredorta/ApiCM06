@@ -118,7 +118,9 @@ class OrderController extends Controller
                 if ($product->stock < $item['quantity']) {
                     $item['quantity'] = $product->stock;
                 } 
-                array_push($result, $item);
+                if ($product->stock>0) {
+                    array_push($result, $item);
+                }
             }
         }
         return $result;
@@ -183,6 +185,10 @@ class OrderController extends Controller
         return json_encode($result);        
     }
 
+    private function _cartFromJson($cart) {
+        return json_decode($cart);
+    }
+
     //Gets the orders related to auth user
     public function getAuthOrders(Request $request) {
         $user = User::find($request->get('myUser'));
@@ -195,6 +201,10 @@ class OrderController extends Controller
         $user = User::find($request->get('myUser'));
         $orders = Order::orderBy('id', 'DESC')->get();
         return json_encode($orders);
+    }
+    //Gets count of orders
+    public function getCount(Request $request) {
+        return json_encode($orders = Order::where("status", "en traitement")->count());
     }
 
     //Update status field
@@ -210,6 +220,38 @@ class OrderController extends Controller
         $order = Order::find($request->id);
         $order->status = $request->status;
         $order->update();
+        //Send email with updated status
+        //Now we need to send email to user 
+        $html = "<div>
+        <h2>" . __('email.order_change_title', ['status'=>$order->status]) . "</h2>
+        <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
+        <h4>" . __('email.order_reference', ['reference'=>$order->paypalOrderId]) . "</h4>
+        <h4>" . __('email.order_delivery') . "</h4>";
+        if (!$order->delivery) {
+            $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
+        } else {
+            $html = $html . "<p>" . $order->address1 . "</p>
+                             <p>" . $order->address2 . "</p> 
+                             <p>" . $order->cp . "</p> 
+                             <p>" . $order->city . "</p>
+                             <p>FRANCE</p>"; 
+        }
+ /*       $html = $html . "<h4>" . __('email.order_products') . "</h4>";
+        $html = $html . "<p>" . $order->cart . "</p>";
+        foreach(JSON.parse($order->cart) as $item) {
+            $product = Product::find($item['id']);
+            $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
+        }*/
+        //TODO FIX THIS UP 
+
+
+        $html = $html . "</div>";
+
+
+        $data = ['html' => $html];
+        $this->sendEmail($order->email, __('email.order_subject'), $data);
+
+
         return response()->json($order,200);  
 
     }
@@ -279,7 +321,8 @@ class OrderController extends Controller
             'price'             => $this->_getCartPrice($cart),
             'cart'              => $this->_cartToJson($cart),
             'paypalOrderId'     => $request->paypalOrderId,
-            'paypalPaymentId'   => $request->paypalPaymentId
+            'paypalPaymentId'   => $request->paypalPaymentId,
+            'status'            => 'en traitement'
         ]);
         //Update the products we have
         $this->_updateProducts($cart);
