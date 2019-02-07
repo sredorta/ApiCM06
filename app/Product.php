@@ -19,4 +19,12 @@ class Product extends Model
     public function attachments() {
         return $this->morphMany(Attachment::class,'attachable');
     }   
+    
+    //Override delete function to remove attachments if any before
+    public function delete() {
+        foreach ($this->attachments()->get() as $attachment) {
+            $attachment->remove();
+        }
+        return parent::delete();
+    }
 }

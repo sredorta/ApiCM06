@@ -89,6 +89,10 @@ class BrandController extends Controller
             $attachment->alt_text = "Logo " . $brand->name;
             $attachment->type = "logo";  //Set type of attachment to logo
             $attachment->save();
+        } else {
+            foreach($brand->attachments()->get() as $attachment) {
+                $attachment->remove();
+            }            
         }
        return response()->json($this->outputBrand($brand, $request->size),200);  
     }
@@ -106,9 +110,11 @@ class BrandController extends Controller
         foreach($brand->attachments()->get() as $attachment) {
             $attachment->remove();
         }
-/*        foreach($brand->modeles()->products()->attachments()->get() as $attachment) {
-            $attachment->remove();
-        }*/
+        foreach($brand->modeles()->get() as $modele) {
+            foreach ($modele->products()->get() as $product) {
+                $product->delete();
+            }
+        }
         $brand->delete();
         return response()->json([],204);
     }   

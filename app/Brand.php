@@ -25,5 +25,13 @@ class Brand extends Model
     public function modeles() {
         return $this->hasMany('App\Modele');
     }
+    
+    //Override delete function to remove attachments if any before
+    public function delete() {
+        foreach ($this->attachments()->get() as $attachment) {
+            $attachment->remove();
+        }
+        return parent::delete();
+    }    
 
 }

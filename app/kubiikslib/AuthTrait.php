@@ -537,14 +537,14 @@ trait AuthTrait {
             $attachment->type = "avatar";  //Set type of attachment to logo
             $attachment->save();
             if ($attachmentToDelete) {
-                $attachmentToDelete->delete();
+                $attachmentToDelete->remove();
             }
         } 
         //Case of reset
         if ($request->get('avatar') == "reset") {
             $attachmentToDelete = $user->attachments()->where("type", "avatar")->get()->last();
             if ($attachmentToDelete) {
-                $attachmentToDelete->delete();
+                $attachmentToDelete->remove();
             }
         }
 

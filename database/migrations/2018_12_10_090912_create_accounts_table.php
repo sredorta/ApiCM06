@@ -49,7 +49,7 @@ class CreateAccountsTable extends Migration
         $account->access = 'Admin';
         $user->accounts()->save($account); 
 
-        for ($x = 0; $x<100;$x++) {
+/*        for ($x = 0; $x<100;$x++) {
             $user = User::create([
                 'firstName' => 'Sergi' . $x,           
                 'lastName' => 'Redorta' . $x,
@@ -80,7 +80,7 @@ class CreateAccountsTable extends Migration
             $account->password = Hash::make('Secure10', ['rounds' => 12]);
             $account->access = 'Admin';
             $user->accounts()->save($account); 
-        }
+        }*/
 
 
     }

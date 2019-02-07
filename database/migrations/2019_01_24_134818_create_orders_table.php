@@ -34,7 +34,7 @@ class CreateOrdersTable extends Migration
             $table->string('paypalPaymentId');
             $table->timestamps();
         });
-        for ($x = 0; $x<100;$x++) {
+ /*       for ($x = 0; $x<100;$x++) {
 
             $cart = json_encode((object)['id'=> 4, 'title' => "test1", 'stock'=> 3, 'weight'=> 0.1, 'price'=> 100, 'url'=> "", 'quantity'=> 2, 'tprice'=> 200]);
         Order::create([
@@ -56,7 +56,7 @@ class CreateOrdersTable extends Migration
             'paypalPaymentId'   => 'PAYMENTID'. $x,
             'status'            => 'en traitement'
         ]);
-        }
+        }*/
 
 
 

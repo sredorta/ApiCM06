@@ -3,6 +3,7 @@
 namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
+use App\Attachment;
 
 class User extends Model
 {
@@ -33,5 +34,13 @@ class User extends Model
     //Return the attachments if any
     public function attachments() {
         return $this->morphMany(Attachment::class,'attachable');
+    }
+
+    //Override delete function to remove attachments if any before
+    public function delete() {
+        foreach ($this->attachments()->get() as $attachment) {
+            $attachment->remove();
+        }
+        return parent::delete();
     }
 }

@@ -33,12 +33,12 @@ class CreateProductsTable extends Migration
         });
 
         //Only for test
-        $brand = Brand::create(["name"=>"BMWTEST"]);
+/*        $brand = Brand::create(["name"=>"BMWTEST"]);
         $modele = $brand->modeles()->create(['name' => "BM100TEST"]);
         for ($x = 0; $x<1000;$x++) {
         Product::create(['title'=> 'test'.$x, 'description'=>'This is a test description to increase data length' ,'price'=>100, 'stock'=>1, 'weight'=>1.2, 'isVehicle'=>true, 'modele_id'=>$modele->id]);
         Product::create(['title'=> 'test'.$x, 'description'=>'This is a test description to increase data length' ,'price'=>200, 'stock'=>3, 'discount'=>100, 'weight'=>0.1, 'isVehicle'=>false, 'modele_id'=>$modele->id]);
-        }
+        }*/
 
     }
 

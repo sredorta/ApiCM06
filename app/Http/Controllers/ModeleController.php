@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Brand;
 use App\Modele;
+use App\Product;
 use Validator;
 
 class ModeleController extends Controller
@@ -42,6 +43,9 @@ class ModeleController extends Controller
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }      
         $modele = Modele::find($request->get("id"));
+        foreach ($modele->products()->get() as $product) {
+            $product->delete();
+        }
         $modele->delete();
         return response()->json([],204);
     }
