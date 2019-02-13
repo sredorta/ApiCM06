@@ -8,10 +8,24 @@ use App\Product;
 use App\Order;
 use App\User;
 use Validator;
-
 use App\kubiikslib\EmailTrait;
+use Illuminate\Support\Facades\Config;
+/** Paypal Details classes **/
+use PayPal\Rest\ApiContext;
+use PayPal\Auth\OAuthTokenCredential;
+use PayPal\Api\Amount;
+use PayPal\Api\Details;
+use PayPal\Api\Item;
+use PayPal\Api\ItemList;
+use PayPal\Api\Payer;
+use PayPal\Api\Payment;
+use PayPal\Api\RedirectUrls;
+use PayPal\Api\PaymentExecution;
+use PayPal\Api\PaymentHistory;
+use PayPal\Api\Transaction;
+use PayPal\Exception\PayPalConnectionException; 
+use GuzzleHttp\Client;
 
- 
 
 class OrderController extends Controller
 {
@@ -295,6 +309,12 @@ class OrderController extends Controller
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }
+        //We need here first to check in the paypal account if the payment has been done !
+        //TODO check with paypal REST API if payment is done !
+        if ($this->checkPayPal($request->paypalPaymentId) == true) {
+            return response()->json(['response'=>'error', 'message'=>'Payment non effectué'],200);  
+        }
+        
         //Check that all product exists and that we got enough stock
         $cart = $request->cart;
         //Generate the result
@@ -350,7 +370,7 @@ class OrderController extends Controller
 
 
         $data = ['html' => $html];
-        $this->sendEmail($order->email, __('email.order_subject'), $data);
+/////////////!!!!!!!!!!!!!!!        $this->sendEmail($order->email, __('email.order_subject'), $data);
         return response()->json($order,200);  
     }
 
@@ -365,7 +385,27 @@ class OrderController extends Controller
         }
     }
 
+    //Checks that the paypal payment ID is approved
+    public function checkPayPal($paymentID) {
+        $paymentID = $paymentID;// . 'TESTFAIL';
+        $paypal_conf = Config::get('paypal');
 
+        //return response()->json($paypal_conf,200); 
+        $apiContext = new ApiContext(new OAuthTokenCredential($paypal_conf['client_id'], $paypal_conf['secret']));
+        $apiContext->setConfig(Config::get('paypal.settings'));
+        try {
+            $payments = Payment::get($paymentID, $apiContext);
+        } catch (Exception $ex) {
+            // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
+            return false;
+        }
+         
+        if ($payments->state == "approved") {
+            return true;
+        } else {
+            return false;
+        } 
+    }
 
 
 
