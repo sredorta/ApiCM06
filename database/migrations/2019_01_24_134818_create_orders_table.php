@@ -30,10 +30,11 @@ class CreateOrdersTable extends Migration
             $table->float('total');
             $table->string('cart',1000);
             $table->string('status',50)->default('preorder');
-            $table->string('paypalOrderId');
-            $table->string('paypalPaymentId');
+//            $table->string('paypalOrderId');
+//            $table->string('paypalPaymentId');
             $table->timestamps();
         });
+        DB::statement("ALTER TABLE orders AUTO_INCREMENT = 1000;");
  /*       for ($x = 0; $x<100;$x++) {
 
             $cart = json_encode((object)['id'=> 4, 'title' => "test1", 'stock'=> 3, 'weight'=> 0.1, 'price'=> 100, 'url'=> "", 'quantity'=> 2, 'tprice'=> 200]);

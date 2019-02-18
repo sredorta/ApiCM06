@@ -29,6 +29,8 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::post('order/check', 'OrderController@check');            //Checks order and return data
     Route::post('order/create', 'OrderController@create');          //Creates preliminary order
 
+    Route::post('payment', 'OrderController@postPaymentWithStripe');
+
 });
 
 //Only if we are not loggedIn

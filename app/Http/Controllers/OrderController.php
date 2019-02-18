@@ -25,6 +25,9 @@ use PayPal\Api\PaymentHistory;
 use PayPal\Api\Transaction;
 use PayPal\Exception\PayPalConnectionException; 
 use GuzzleHttp\Client;
+/*Stripe payment*/
+use Stripe\Error\Card;
+use Cartalyst\Stripe\Stripe;
 
 
 class OrderController extends Controller
@@ -284,10 +287,28 @@ class OrderController extends Controller
 
     }    
 
-   //Creates the order
-    public function create(Request $request) {
 
+
+    private function _updateProducts($cart) {
+        foreach($cart as $item){
+            $obj = (object)[];
+            $product = Product::find($item['id']);
+            $stock = $product->stock - $item['quantity'];
+            if ($stock<0) $stock = 0;
+            $product->stock = $stock;
+            $product->update();
+        }
+    }
+
+
+    //Create a payment with stripe
+    public function postPaymentWithStripe(Request $request) {
         $validator = Validator::make($request->all(), [
+            'ccName'  => 'required|string|min:2',
+            'ccNumber' => 'required|regex:/^[0-9]+$/|min:16|max:16',
+            'ccExpiryMonth' => 'required|regex:/^[0-9]+$/|min:2|max:2',
+            'ccExpiryYear' => 'required|regex:/^[0-9]+$/|min:4|max:4',
+            'cvvNumber' => 'required|regex:/^[0-9]+$/|min:3|max:3',
             'user_id'   => 'nullable|exists:users,id',
             'firstName' => 'required|min:2|max:50',
             'lastName' => 'required|min:2|max:50',
@@ -302,29 +323,34 @@ class OrderController extends Controller
             'cart.*.id' => 'required|numeric',
             'cart.*.title' => 'required|min:2',
             'cart.*.quantity'=> 'required|numeric',
-            'paypalOrderId' => 'required|min:2',
-            'paypalPaymentId' => 'required|min:2'
-
         ]);
+
         if ($validator->fails()) {
             return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
         }
-        //We need here first to check in the paypal account if the payment has been done !
-        //TODO check with paypal REST API if payment is done !
-        if ($this->checkPayPal($request->paypalPaymentId) == true) {
-            return response()->json(['response'=>'error', 'message'=>'Payment non effectué'],200);  
-        }
-        
-        //Check that all product exists and that we got enough stock
+
+        //STEP1: VALIDATE THAT WE HAVE IN STOCK WHAT IS REQUIRED IN THE CART
+        //TODO when we get this error we need to empty the cart and tell user to revisit the site and reload products
+
         $cart = $request->cart;
-        //Generate the result
+        foreach($cart as $item){
+            $obj = (object)[];
+            $product = Product::find($item['id']);
+            if (!$product) {
+                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+            }
+            if ($product->stock< $item['quantity']) {
+                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+            }
+        }
         $result = (object)[];
         $result->price              = $this->_getCartPrice($cart);
         $result->deliveryCost       = $this->_getDeliveryPrice($cart, $request->delivery);
         $result->weight             = $this->_getCartWeight($cart);
         $result->cart               = $this->_cartToJson($cart);
         $result->total              = $result->price + $result->deliveryCost;
-      
+
+        //STEP2: Create a preorder so that we get the id
         $order = Order::create([
             'user_id'           => $request->user_id,
             'firstName'         => $request->firstName,
@@ -336,77 +362,107 @@ class OrderController extends Controller
             'address2'          => $request->address2,
             'cp'                => $request->cp,
             'city'              => $request->city,
-            'total'             => $this->_getCartPrice($cart)+$this->_getDeliveryPrice($cart, $request->delivery),
-            'deliveryCost'      => $this->_getDeliveryPrice($cart, $request->delivery),
-            'price'             => $this->_getCartPrice($cart),
-            'cart'              => $this->_cartToJson($cart),
-            'paypalOrderId'     => $request->paypalOrderId,
-            'paypalPaymentId'   => $request->paypalPaymentId,
-            'status'            => 'en traitement'
+            'total'             => $result->price + $result->deliveryCost,
+            'deliveryCost'      => $result->deliveryCost,
+            'price'             => $result->price,
+            'cart'              => $result->cart,
+            'status'            => 'preorder'
         ]);
-        //Update the products we have
-        $this->_updateProducts($cart);
-        //Now we need to send email to user 
-        $html = "<div>
-        <h2>" . __('email.order_title') . "</h2>
-        <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
-        <h4>" . __('email.order_reference', ['reference'=>$order->paypalOrderId]) . "</h4>
-        <h4>" . __('email.order_delivery') . "</h4>";
-        if (!$order->delivery) {
-            $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
-        } else {
-            $html = $html . "<p>" . $order->address1 . "</p>
-                             <p>" . $order->address2 . "</p> 
-                             <p>" . $order->cp . "</p> 
-                             <p>" . $order->city . "</p>
-                             <p>FRANCE</p>"; 
-        }
-        $html = $html . "<h4>" . __('email.order_products') . "</h4>";
-        foreach($cart as $item) {
-            $product = Product::find($item['id']);
-            $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
-        }
-        $html = $html . "</div>";
 
-
-        $data = ['html' => $html];
-/////////////!!!!!!!!!!!!!!!        $this->sendEmail($order->email, __('email.order_subject'), $data);
-        return response()->json($order,200);  
-    }
-
-    private function _updateProducts($cart) {
-        foreach($cart as $item){
-            $obj = (object)[];
-            $product = Product::find($item['id']);
-            $stock = $product->stock - $item['quantity'];
-            if ($stock<0) $stock = 0;
-            $product->stock = $stock;
-            $product->update();
-        }
-    }
-
-    //Checks that the paypal payment ID is approved
-    public function checkPayPal($paymentID) {
-        $paymentID = $paymentID;// . 'TESTFAIL';
-        $paypal_conf = Config::get('paypal');
-
-        //return response()->json($paypal_conf,200); 
-        $apiContext = new ApiContext(new OAuthTokenCredential($paypal_conf['client_id'], $paypal_conf['secret']));
-        $apiContext->setConfig(Config::get('paypal.settings'));
+        //STEP3: CREATE THE PAYMENT
+        $stripe = Stripe::make(env('STRIPE_SECRET'));
         try {
-            $payments = Payment::get($paymentID, $apiContext);
-        } catch (Exception $ex) {
-            // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
-            return false;
+            $token = $stripe->tokens()->create([
+                'card' => [
+                    'name' => $request->get('ccName'),
+                    'number' => $request->get('ccNumber'),
+                    'exp_month' => $request->get('ccExpiryMonth'),
+                    'exp_year' => $request->get('ccExpiryYear'),
+                    'cvc' => $request->get('cvvNumber'),
+                    ],
+            ]);
+
+            if (!isset($token['id'])) {
+                return response()->json(['response'=>'error', 'message'=>'No token ID stripe'], 400);
+            }
+            $charge = $stripe->charges()->create([
+                'card' => $token['id'],
+                'currency' => 'EUR',
+                'amount' => $result->total,
+                'description' => 'COMMANDE '. $order->id,
+                'metadata' => ['Commande' => $order->id,
+                               'Prénom'=> $request->get('firstName'), 
+                               'Nom'=>$request->get('lastName'),
+                               'Email' => $request->get('email'),
+                               'Telephone' => $request->get('mobile'),
+                               'Livraison' => $request->get('delivery'),
+                               'Adresse1' => $request->address1,
+                               'Adresse2' => $request->address2,
+                               'Ville'  => $request->city,
+                               'Code Postale' => $request->cp,
+                               'articles' => $result->cart
+                               ]
+                ]);
+                
+            if($charge['status'] == 'succeeded') {
+                //Update order status to "en préparation"
+                $order->status = "en préparation";
+                $order->update();
+                //Update the products stock
+                $this->_updateProducts($cart);
+                //Now we need to send email to user 
+                $html = "<div>
+                <h2>" . __('email.order_title') . "</h2>
+                <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
+                <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>
+                <h4>" . __('email.order_delivery') . "</h4>";
+                if (!$order->delivery) {
+                    $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
+                } else {
+                    $html = $html . "<p>" . $order->address1 . "</p>
+                                    <p>" . $order->address2 . "</p> 
+                                    <p>" . $order->cp . "</p> 
+                                    <p>" . $order->city . "</p>
+                                    <p>FRANCE</p>"; 
+                }
+                $html = $html . "<h4>" . __('email.order_products') . "</h4>";
+                foreach($cart as $item) {
+                    $product = Product::find($item['id']);
+                    $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
+                }
+                $html = $html . "</div>";
+                $data = ['html' => $html];
+        /////////////!!!!!!!!!!!!!!!        $this->sendEmail($order->email, __('email.order_subject'), $data);
+
+                return response()->json($order, 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['response'=>'error', 'message'=>json_encode($e)], 400);
+        } catch(\Cartalyst\Stripe\Exception\CardErrorException $e) {
+            return response()->json(['response'=>'error', 'message'=>$this->stripeTranslateError($e)], 400);
+        } catch(\Cartalyst\Stripe\Exception\MissingParameterException $e) {
+            return response()->json(['response'=>'error', 'message'=>$e->getMessage()], 400);
         }
-         
-        if ($payments->state == "approved") {
-            return true;
-        } else {
-            return false;
-        } 
     }
 
+
+    private function stripeTranslateError($err) {
+        $errorCode = $err->getErrorCode();
+        switch ($errorCode) {
+            case 'incorrect_number': 
+                return 'Numéro de carte incorrect';
+                break;
+            case 'invalid_expiry_year':
+                return 'Année d\'expiration incorrecte';
+                break;    
+            case 'invalid_expiry_month':
+                return 'Mois d\'expiration incorrecte';
+                break;        
+            default:
+                return  $err->getErrorCode();//$err->getMessage();
+
+        }
+    }
 
 
 }

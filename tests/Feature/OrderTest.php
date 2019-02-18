@@ -114,4 +114,15 @@ class OrderTest extends TestCase
         $response = $this->post('api/debugPayPal',[]);
         dd($response);
     }
+    public function testPayment() {
+        $data = [
+            'card_no' => '4242424242424242',
+            'ccExpiryMonth' => '12',
+            'ccExpiryYear' => '2020',
+            'cvvNumber' => '122',
+            'amount' => 10,
+        ];
+        $response = $this->post('api/payment',$data);
+        dd($response);
+    }
 }
