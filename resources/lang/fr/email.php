@@ -31,6 +31,8 @@ return [
     'order_delivery' => "Livraison",
     'order_nodelivery' => "Sans livraison, vous passez chercher votre commande",
     "order_products" => "Articles de votre commande",
-    "order_change_title" => "Votre commande à changé à : :status"
+    "order_change_title" => "Votre commande à changé à : :status",
+    "order_colissimo_title" => "Numéro de suivi colissimo : :tracking",
+    "order_colissimo_click" => "Suivre mon colis",
 
 ];

@@ -229,6 +229,7 @@ class OrderController extends Controller
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:orders',
             'status' => 'required|min:2|max:50',
+            'tracking' => 'nullable|min:11|max:15'
 
         ]);
         if ($validator->fails()) {
@@ -236,13 +237,18 @@ class OrderController extends Controller
         }
         $order = Order::find($request->id);
         $order->status = $request->status;
+        if ($request->tracking) {
+            $order->tracking = $request->tracking;
+        }
         $order->update();
         //Send email with updated status
         //Now we need to send email to user 
         $html = "<div>
         <h2>" . __('email.order_change_title', ['status'=>$order->status]) . "</h2>
         <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
-        <h4>" . __('email.order_reference', ['reference'=>$order->paypalOrderId]) . "</h4>
+        <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>
+        <h4>" . __('email.order_colissimo_title', ['tracking'=>$order->tracking]) . "</h4>
+        <a href='https://www.laposte.fr/particulier/outils/suivre-vos-envois?code=" . $order->tracking . "'>" . __('email.order_colissimo_click') . "</a>
         <h4>" . __('email.order_delivery') . "</h4>";
         if (!$order->delivery) {
             $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
@@ -400,7 +406,11 @@ class OrderController extends Controller
                                'Adresse2' => $request->address2,
                                'Ville'  => $request->city,
                                'Code Postale' => $request->cp,
-                               'articles' => $result->cart
+                               'articles' => $result->cart,
+                               'prix' => $result->price,
+                               'livraison' => $result->deliveryCost,
+                               'total' => $result->total,
+                               'Poids total' => $result->weight
                                ]
                 ]);
                 
@@ -457,7 +467,18 @@ class OrderController extends Controller
                 break;    
             case 'invalid_expiry_month':
                 return 'Mois d\'expiration incorrecte';
-                break;        
+                break;      
+            case 'incorrect_cvc':
+                return 'Cryptogramme incorrecte';
+                break;  
+            case 'card_declined':
+                return 'Payement refusé ! Veuillez utiliser une autre carte.';
+                break;
+            case 'expired_card':
+                return 'Carte perimé ! Veuillez utiliser une autre carte';
+                break;
+
+
             default:
                 return  $err->getErrorCode();//$err->getMessage();
 

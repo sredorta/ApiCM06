@@ -30,8 +30,7 @@ class CreateOrdersTable extends Migration
             $table->float('total');
             $table->string('cart',1000);
             $table->string('status',50)->default('preorder');
-//            $table->string('paypalOrderId');
-//            $table->string('paypalPaymentId');
+            $table->string('tracking',20)->nullable();
             $table->timestamps();
         });
         DB::statement("ALTER TABLE orders AUTO_INCREMENT = 1000;");
