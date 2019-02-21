@@ -33,6 +33,8 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::post('paymentintent', 'OrderController@createPreOrder');
     Route::post('paymentwebhook', 'OrderController@webhook');
 
+    Route::get('test', 'OrderController@testOrder');
+
 });
 
 //Only if we are not loggedIn

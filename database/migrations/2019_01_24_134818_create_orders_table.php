@@ -15,6 +15,7 @@ class CreateOrdersTable extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->increments('id');
+            $table->string('payment_id',100)->unique()->nullable();
             $table->integer('user_id')->unsigned()->nullable();   //Store user id if ordered with account
             $table->string('firstName',50);
             $table->string('lastName',50);

@@ -181,6 +181,7 @@ class OrderController extends Controller
         foreach($cart as $item){
             $obj = (object)[];
             $product = Product::find($item['id']);
+            $obj->id = $product->id;
             $obj->title = $product->title;
             $obj->price = $product->price - $product->discount;
             $obj->weight = $product->weight;
@@ -210,7 +211,7 @@ class OrderController extends Controller
     }
     //Gets count of orders
     public function getCount(Request $request) {
-        return json_encode($orders = Order::where("status", "en traitement")->count());
+        return json_encode($orders = Order::where("status", "paiement accepté")->count());
     }
 
     //Update status field
@@ -232,6 +233,7 @@ class OrderController extends Controller
             $order->tracking = null;
         }
         $order->update();
+        $cart = json_decode($order->cart);
         //Send email with updated status
         //Now we need to send email to user 
         $html = "<div>
@@ -254,12 +256,12 @@ class OrderController extends Controller
                              <p>" . $order->city . "</p>
                              <p>FRANCE</p>"; 
         }
- /*       $html = $html . "<h4>" . __('email.order_products') . "</h4>";
-        $html = $html . "<p>" . $order->cart . "</p>";
-        foreach(JSON.parse($order->cart) as $item) {
-            $product = Product::find($item['id']);
-            $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
-        }*/
+        $html = $html . "<h4>" . __('email.order_products') . "</h4>";
+        foreach($cart as $item) {
+            $product = Product::find($item->id);
+            $html = $html . "<p>" . $item->quantity . " x   " . $product->title . "</p>"; 
+        }
+        $html = $html . "</div>";
         //TODO FIX THIS UP 
 
 
@@ -293,8 +295,8 @@ class OrderController extends Controller
     private function _updateProducts($cart) {
         foreach($cart as $item){
             $obj = (object)[];
-            $product = Product::find($item['id']);
-            $stock = $product->stock - $item['quantity'];
+            $product = Product::find($item->id);
+            $stock = $product->stock - $item->quantity;
             if ($stock<0) $stock = 0;
             $product->stock = $stock;
             $product->update();
@@ -397,6 +399,8 @@ class OrderController extends Controller
                 "Total" => $order->total
             ]
         ]);
+        $order->payment_id = $intent->id;
+        $order->update();
         //Return the transaction key
         return response()->json(['key'=> $intent->client_secret]);
     }
@@ -427,205 +431,66 @@ class OrderController extends Controller
         if ($event->type == "payment_intent.succeeded") {
           $intent = $event->data->object;
           printf("Succeeded: %s", $intent->id);
+          $this->setPayedOrder($intent->id);
           http_response_code(200);
           exit();
         } elseif ($event->type == "payment_intent.payment_failed") {
           $intent = $event->data->object;
           $error_message = $intent->last_payment_error ? $intent->last_payment_error->message : "";
           printf("Failed: %s, %s", $intent->id, $error_message);
+          $this->setNotPayedOrder($intent->id);  
           http_response_code(200);
           exit();
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    //Create a payment with stripe
-    public function postPaymentWithStripe(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'ccName'  => 'required|string|min:2',
-            'ccNumber' => 'required|regex:/^[0-9]+$/|min:16|max:16',
-            'ccExpiryMonth' => 'required|regex:/^[0-9]+$/|min:2|max:2',
-            'ccExpiryYear' => 'required|regex:/^[0-9]+$/|min:4|max:4',
-            'cvvNumber' => 'required|regex:/^[0-9]+$/|min:3|max:3',
-            'user_id'   => 'nullable|exists:users,id',
-            'firstName' => 'required|min:2|max:50',
-            'lastName' => 'required|min:2|max:50',
-            'email' => 'required|email',            
-            'mobile' => 'required|regex:/^[0-9]+$/|min:10|max:10',
-            'delivery'  => 'required|boolean',
-            'address1'  => 'required_if:delivery,true|min:2|max:200',
-            'address2'  => 'nullable|min:2|max:200',
-            'cp'        => 'required_if:delivery,==,true|regex:/^[0-9]+$/|min:5|max:5',
-            'city'      => 'required_if:delivery,==,true|min:2|max:100',
-            'cart'  => 'required|array',
-            'cart.*.id' => 'required|numeric',
-            'cart.*.title' => 'required|min:2',
-            'cart.*.quantity'=> 'required|numeric',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+    //Updates the order as payed and notifies user via email
+    function setPayedOrder($payment_id) {
+        $order = Order::where('payment_id', $payment_id)->first();//find($intent->metadata->Commande);
+        $order->status = "paiement accepté";
+        $order->update();
+        //Now we need to quickly update the stock !
+        $cart = json_decode($order->cart);
+        $this->_updateProducts($cart);
+        //Now send email to customer confirming the shopping
+        $html = "<div>
+        <h2>" . __('email.order_title') . "</h2>
+        <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
+        <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>
+        <h4>" . __('email.order_delivery') . "</h4>";
+        if (!$order->delivery) {
+            $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
+        } else {
+            $html = $html . "<p>" . $order->address1 . "</p>
+                            <p>" . $order->address2 . "</p> 
+                            <p>" . $order->cp . "</p> 
+                            <p>" . $order->city . "</p>
+                            <p>FRANCE</p>"; 
         }
-
-        //STEP1: VALIDATE THAT WE HAVE IN STOCK WHAT IS REQUIRED IN THE CART
-        //TODO when we get this error we need to empty the cart and tell user to revisit the site and reload products
-
-        $cart = $request->cart;
-        foreach($cart as $item){
-            $obj = (object)[];
-            $product = Product::find($item['id']);
-            if (!$product) {
-                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
-            }
-            if ($product->stock< $item['quantity']) {
-                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
-            }
+        $html = $html . "<h4>" . __('email.order_products') . "</h4>";
+        foreach($cart as $item) {
+            $product = Product::find($item->id);
+            $html = $html . "<p>" . $item->quantity . " x   " . $product->title . "</p>"; 
         }
-        $result = (object)[];
-        $result->price              = $this->_getCartPrice($cart);
-        $result->deliveryCost       = $this->_getDeliveryPrice($cart, $request->delivery);
-        $result->weight             = $this->_getCartWeight($cart);
-        $result->cart               = $this->_cartToJson($cart);
-        $result->total              = $result->price + $result->deliveryCost;
+        $html = $html . "</div>";
+        $data = ['html' => $html];
+        $this->sendEmail($order->email, __('email.order_subject'), $data);
 
-        //STEP2: Create a preorder so that we get the id
-        $order = Order::create([
-            'user_id'           => $request->user_id,
-            'firstName'         => $request->firstName,
-            'lastName'          => $request->lastName,
-            'email'             => $request->email,            
-            'mobile'            => $request->mobile,
-            'delivery'          => $request->delivery,
-            'address1'          => $request->address1,
-            'address2'          => $request->address2,
-            'cp'                => $request->cp,
-            'city'              => $request->city,
-            'total'             => $result->price + $result->deliveryCost,
-            'deliveryCost'      => $result->deliveryCost,
-            'price'             => $result->price,
-            'cart'              => $result->cart,
-            'status'            => 'preorder'
-        ]);
-
-        //STEP3: CREATE THE PAYMENT
-        $stripe = Stripe::make(env('STRIPE_SECRET'));
-        try {
-            $token = $stripe->tokens()->create([
-                'card' => [
-                    'name' => $request->get('ccName'),
-                    'number' => $request->get('ccNumber'),
-                    'exp_month' => $request->get('ccExpiryMonth'),
-                    'exp_year' => $request->get('ccExpiryYear'),
-                    'cvc' => $request->get('cvvNumber'),
-                    ],
-            ]);
-
-            if (!isset($token['id'])) {
-                return response()->json(['response'=>'error', 'message'=>'No token ID stripe'], 400);
-            }
-            $charge = $stripe->charges()->create([
-                'card' => $token['id'],
-                'currency' => 'EUR',
-                'amount' => $result->total,
-                'description' => 'COMMANDE '. $order->id,
-                'metadata' => ['Commande' => $order->id,
-                               'Prénom'=> $request->get('firstName'), 
-                               'Nom'=>$request->get('lastName'),
-                               'Email' => $request->get('email'),
-                               'Telephone' => $request->get('mobile'),
-                               'Livraison' => $request->get('delivery'),
-                               'Adresse1' => $request->address1,
-                               'Adresse2' => $request->address2,
-                               'Ville'  => $request->city,
-                               'Code Postale' => $request->cp,
-                               'articles' => $result->cart,
-                               'prix' => $result->price,
-                               'livraison' => $result->deliveryCost,
-                               'total' => $result->total,
-                               'Poids total' => $result->weight
-                               ]
-                ]);
-                
-            if($charge['status'] == 'succeeded') {
-                //Update order status to "en préparation"
-                $order->status = "en préparation";
-                $order->update();
-                //Update the products stock
-                $this->_updateProducts($cart);
-                //Now we need to send email to user 
-                $html = "<div>
-                <h2>" . __('email.order_title') . "</h2>
-                <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
-                <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>
-                <h4>" . __('email.order_delivery') . "</h4>";
-                if (!$order->delivery) {
-                    $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
-                } else {
-                    $html = $html . "<p>" . $order->address1 . "</p>
-                                    <p>" . $order->address2 . "</p> 
-                                    <p>" . $order->cp . "</p> 
-                                    <p>" . $order->city . "</p>
-                                    <p>FRANCE</p>"; 
-                }
-                $html = $html . "<h4>" . __('email.order_products') . "</h4>";
-                foreach($cart as $item) {
-                    $product = Product::find($item['id']);
-                    $html = $html . "<p>" . $item["quantity"] . " x   " . $product->title . "</p>"; 
-                }
-                $html = $html . "</div>";
-                $data = ['html' => $html];
-        /////////////!!!!!!!!!!!!!!!        $this->sendEmail($order->email, __('email.order_subject'), $data);
-
-                return response()->json($order, 200);
-            }
-        } catch (Exception $e) {
-            return response()->json(['response'=>'error', 'message'=>json_encode($e)], 400);
-        } catch(\Cartalyst\Stripe\Exception\CardErrorException $e) {
-            return response()->json(['response'=>'error', 'message'=>$this->stripeTranslateError($e)], 400);
-        } catch(\Cartalyst\Stripe\Exception\MissingParameterException $e) {
-            return response()->json(['response'=>'error', 'message'=>$e->getMessage()], 400);
-        }
     }
 
-
-    private function stripeTranslateError($err) {
-        $errorCode = $err->getErrorCode();
-        switch ($errorCode) {
-            case 'incorrect_number': 
-                return 'Numéro de carte incorrect';
-                break;
-            case 'invalid_expiry_year':
-                return 'Année d\'expiration incorrecte';
-                break;    
-            case 'invalid_expiry_month':
-                return 'Mois d\'expiration incorrecte';
-                break;      
-            case 'incorrect_cvc':
-                return 'Cryptogramme incorrecte';
-                break;  
-            case 'card_declined':
-                return 'Payement refusé ! Veuillez utiliser une autre carte.';
-                break;
-            case 'expired_card':
-                return 'Carte perimé ! Veuillez utiliser une autre carte';
-                break;
-
-
-            default:
-                return  $err->getErrorCode();//$err->getMessage();
-
-        }
+    //Updates the order as refused
+    function setNotPayedOrder($payment_id) {
+        $order = Order::where('payment_id', $payment_id)->first();
+        $order->status = "paiement refusé";
+        $order->update();
     }
+    
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    function testOrder(Request $request) {
+        $order = Order::all()->last();
+        $cart = json_decode($order->cart);
+        $this->_updateProducts($cart);
+        return response()->json(['response'=>'error', 'message'=>$cart], 200);   //!!!!!!!!!! TRANSLATE
 
-
+    }
 }
