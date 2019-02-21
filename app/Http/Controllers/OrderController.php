@@ -10,24 +10,13 @@ use App\User;
 use Validator;
 use App\kubiikslib\EmailTrait;
 use Illuminate\Support\Facades\Config;
-/** Paypal Details classes **/
-use PayPal\Rest\ApiContext;
-use PayPal\Auth\OAuthTokenCredential;
-use PayPal\Api\Amount;
-use PayPal\Api\Details;
-use PayPal\Api\Item;
-use PayPal\Api\ItemList;
-use PayPal\Api\Payer;
-use PayPal\Api\Payment;
-use PayPal\Api\RedirectUrls;
-use PayPal\Api\PaymentExecution;
-use PayPal\Api\PaymentHistory;
-use PayPal\Api\Transaction;
-use PayPal\Exception\PayPalConnectionException; 
-use GuzzleHttp\Client;
+
 /*Stripe payment*/
-use Stripe\Error\Card;
-use Cartalyst\Stripe\Stripe;
+use Stripe;
+use Stripe\PaymentIntent;
+//use Stripe\StripePaymentIntent;
+//use Stripe\Error\Card;
+
 
 
 class OrderController extends Controller
@@ -64,7 +53,7 @@ class OrderController extends Controller
     public function check(Request $request) {
 
         $validator = Validator::make($request->all(), [
-            'firstName' => 'required|min:2|max:50',
+/*            'firstName' => 'required|min:2|max:50',
             'lastName' => 'required|min:2|max:50',
             'email' => 'required|email',            
             'mobile' => 'required|regex:/^[0-9]+$/|min:10|max:10',
@@ -72,7 +61,7 @@ class OrderController extends Controller
             'address1'  => 'required_if:delivery,true|min:2|max:200',
             'address2'  => 'nullable|min:2|max:200',
             'cp'        => 'required_if:delivery,==,true|regex:/^[0-9]+$/|min:5|max:5',
-            'city'      => 'required_if:delivery,==,true|min:2|max:100',
+            'city'      => 'required_if:delivery,==,true|min:2|max:100',*/
             'cart'  => 'required|array',
             'cart.*.id' => 'required|numeric',
             'cart.*.quantity'=> 'required|numeric'
@@ -239,6 +228,8 @@ class OrderController extends Controller
         $order->status = $request->status;
         if ($request->tracking) {
             $order->tracking = $request->tracking;
+        } else {
+            $order->tracking = null;
         }
         $order->update();
         //Send email with updated status
@@ -246,13 +237,17 @@ class OrderController extends Controller
         $html = "<div>
         <h2>" . __('email.order_change_title', ['status'=>$order->status]) . "</h2>
         <h3>" . __('email.order_total', ['total'=>$order->total]) . "</h3>
-        <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>
-        <h4>" . __('email.order_colissimo_title', ['tracking'=>$order->tracking]) . "</h4>
-        <a href='https://www.laposte.fr/particulier/outils/suivre-vos-envois?code=" . $order->tracking . "'>" . __('email.order_colissimo_click') . "</a>
-        <h4>" . __('email.order_delivery') . "</h4>";
+        <h4>" . __('email.order_reference', ['reference'=>$order->id]) . "</h4>";
         if (!$order->delivery) {
             $html = $html . "<p>" . __('email.order_nodelivery') . "</p>";
         } else {
+            
+            if (strlen($order->tracking>5)) {
+                $html = $html . "
+                <h4>" . __('email.order_colissimo_title', ['tracking'=>$order->tracking]) . "</h4>
+                <a href='https://www.laposte.fr/particulier/outils/suivre-vos-envois?code=" . $order->tracking . "'>" . __('email.order_colissimo_click') . "</a>";
+            }       
+            $html = $html . "<h4>" . __('email.order_delivery') . "</h4>";         
             $html = $html . "<p>" . $order->address1 . "</p>
                              <p>" . $order->address2 . "</p> 
                              <p>" . $order->cp . "</p> 
@@ -305,6 +300,153 @@ class OrderController extends Controller
             $product->update();
         }
     }
+
+    public function createPreOrder(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'user_id'   => 'nullable|exists:users,id',
+            'firstName' => 'required|min:2|max:50',
+            'lastName' => 'required|min:2|max:50',
+            'email' => 'required|email',            
+            'mobile' => 'required|regex:/^[0-9]+$/|min:10|max:10',
+            'delivery'  => 'required|boolean',
+            'address1'  => 'required_if:delivery,1',
+            'address2'  => 'nullable',
+            'cp'        => 'required_if:delivery,1',
+            'city'      => 'required_if:delivery,1',
+            'total' => 'required|numeric',
+            'cart'  => 'required|array',
+            'cart.*.id' => 'required|numeric',
+            'cart.*.title' => 'required|min:2',
+            'cart.*.quantity'=> 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+        }
+        if ($request->delivery) {
+            $validator = Validator::make($request->all(), [
+                'address1'  => 'min:2|max:200',
+                'cp'        => 'regex:/^[0-9]+$/|min:5|max:5',
+                'city'      => 'min:2|max:100',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['response'=>'error', 'message'=>$validator->errors()->first()], 400);
+            }
+        }
+        //Check that we have in stock and that total from client matches new calculated total
+        $cart = $request->cart;
+        foreach($cart as $item){
+            $obj = (object)[];
+            $product = Product::find($item['id']);
+            if (!$product) {
+                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+            }
+            if ($product->stock< $item['quantity']) {
+                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+            }
+        }
+
+        $result = (object)[];
+        $result->price              = $this->_getCartPrice($cart);
+        $result->deliveryCost       = $this->_getDeliveryPrice($cart, $request->delivery);
+        $result->weight             = $this->_getCartWeight($cart);
+        $result->cart               = $this->_cartToJson($cart);
+        $result->total              = $result->price + $result->deliveryCost;
+        if ($result->total != $request->total) {
+            return response()->json(['response'=>'error', 'message'=>'TOTALS NOT MATCHING'], 400);   //!!!!!!!!!! TRANSLATE
+        }
+        //Create a preOrder
+        $order = Order::create([
+            'user_id'           => $request->user_id,
+            'firstName'         => $request->firstName,
+            'lastName'          => $request->lastName,
+            'email'             => $request->email,            
+            'mobile'            => $request->mobile,
+            'delivery'          => $request->delivery,
+            'address1'          => $request->address1,
+            'address2'          => $request->address2,
+            'cp'                => $request->cp,
+            'city'              => $request->city,
+            'total'             => $result->price + $result->deliveryCost,
+            'deliveryCost'      => $result->deliveryCost,
+            'price'             => $result->price,
+            'cart'              => $result->cart,
+            'status'            => 'preorder'
+        ]);        
+        //Create a payment Intent now
+        $total = ($result->price + $result->deliveryCost)*100; //Need to move from cents
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        $intent = PaymentIntent::create([
+            "amount" => $total,
+            "currency" => "eur",
+            "payment_method_types" => ["card"],
+            "description" => "COMMANDE " . $order->id,
+            "metadata" => [
+                "Commande" => $order->id,
+                "Prénom" => $order->firstName,
+                "Nom" => $order->lastName,
+                "Livraison" => $order->delivery,
+                "Adresse1" => $order->address1,
+                "Adresse2" => $order->address2,
+                "Ville" => $order->city,
+                "Code Postale" => $order->cp,
+                "Articles" => $result->cart,
+                "Poids total" => $result->weight,
+                "Prix" => $order->price,
+                "Cout Livraison" => $order->deliveryCost,
+                "Total" => $order->total
+            ]
+        ]);
+        //Return the transaction key
+        return response()->json(['key'=> $intent->client_secret]);
+    }
+
+    //Handles the webhook provided by Stripe
+    public function webhook(Request $request)
+    {
+        $endpoint_secret = env('STRIPE_WEBHOOK'); //Webhook secret key
+
+        $payload = @file_get_contents('php://input');
+        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $event = null;
+        
+        try {
+          $event = \Stripe\Webhook::constructEvent(
+            $payload, $sig_header, $endpoint_secret
+          );
+        } catch(\UnexpectedValueException $e) {
+          // Invalid payload
+          http_response_code(400); // PHP 5.4 or greater
+          exit();
+        } catch(\Stripe\Error\SignatureVerification $e) {
+          // Invalid signature
+          http_response_code(400); // PHP 5.4 or greater
+          exit();
+        }
+        
+        if ($event->type == "payment_intent.succeeded") {
+          $intent = $event->data->object;
+          printf("Succeeded: %s", $intent->id);
+          http_response_code(200);
+          exit();
+        } elseif ($event->type == "payment_intent.payment_failed") {
+          $intent = $event->data->object;
+          $error_message = $intent->last_payment_error ? $intent->last_payment_error->message : "";
+          printf("Failed: %s, %s", $intent->id, $error_message);
+          http_response_code(200);
+          exit();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
 
     //Create a payment with stripe
