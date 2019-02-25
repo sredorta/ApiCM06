@@ -29,11 +29,9 @@ Route::group(['middleware' => ['any']], function ($router) {
     Route::post('order/check', 'OrderController@check');            //Checks order and return data
     Route::post('order/create', 'OrderController@create');          //Creates preliminary order
 
-    Route::post('payment', 'OrderController@postPaymentWithStripe');
+    //Route::post('payment', 'OrderController@postPaymentWithStripe');
     Route::post('paymentintent', 'OrderController@createPreOrder');
     Route::post('paymentwebhook', 'OrderController@webhook');
-
-    Route::get('test', 'OrderController@testOrder');
 
 });
 

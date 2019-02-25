@@ -262,12 +262,7 @@ class OrderController extends Controller
             $html = $html . "<p>" . $item->quantity . " x   " . $product->title . "</p>"; 
         }
         $html = $html . "</div>";
-        //TODO FIX THIS UP 
-
-
         $html = $html . "</div>";
-
-
         $data = ['html' => $html];
         $this->sendEmail($order->email, __('email.order_subject'), $data);
 
@@ -348,6 +343,8 @@ class OrderController extends Controller
             }
         }
 
+
+
         $result = (object)[];
         $result->price              = $this->_getCartPrice($cart);
         $result->deliveryCost       = $this->_getDeliveryPrice($cart, $request->delivery);
@@ -355,7 +352,10 @@ class OrderController extends Controller
         $result->cart               = $this->_cartToJson($cart);
         $result->total              = $result->price + $result->deliveryCost;
         if ($result->total != $request->total) {
-            return response()->json(['response'=>'error', 'message'=>'TOTALS NOT MATCHING'], 400);   //!!!!!!!!!! TRANSLATE
+            return response()->json(['response'=>'error', 'message'=>'Prix incorrect, votre commande n\'a pas été prise en compte'], 400);   //!!!!!!!!!! TRANSLATE
+        }
+        if ($result->total <=0) {
+            return response()->json(['response'=>'error', 'message'=>'Prix incorrect, votre commande n\'a pas été prise en compte'], 400);   //!!!!!!!!!! TRANSLATE
         }
         //Create a preOrder
         $order = Order::create([
@@ -483,14 +483,5 @@ class OrderController extends Controller
         $order = Order::where('payment_id', $payment_id)->first();
         $order->status = "paiement refusé";
         $order->update();
-    }
-    
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    function testOrder(Request $request) {
-        $order = Order::all()->last();
-        $cart = json_decode($order->cart);
-        $this->_updateProducts($cart);
-        return response()->json(['response'=>'error', 'message'=>$cart], 200);   //!!!!!!!!!! TRANSLATE
-
     }
 }
