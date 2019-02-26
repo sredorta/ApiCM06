@@ -336,10 +336,10 @@ class OrderController extends Controller
             $obj = (object)[];
             $product = Product::find($item['id']);
             if (!$product) {
-                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+                return response()->json(['response'=>'error', 'message'=>__('order.error_product')], 400);
             }
             if ($product->stock< $item['quantity']) {
-                return response()->json(['response'=>'error', 'message'=>'Produit indisponnible'], 400);
+                return response()->json(['response'=>'error', 'message'=>__('order.error_product')], 400);
             }
         }
 
@@ -352,10 +352,10 @@ class OrderController extends Controller
         $result->cart               = $this->_cartToJson($cart);
         $result->total              = $result->price + $result->deliveryCost;
         if ($result->total != $request->total) {
-            return response()->json(['response'=>'error', 'message'=>'Prix incorrect, votre commande n\'a pas été prise en compte'], 400);   //!!!!!!!!!! TRANSLATE
+            return response()->json(['response'=>'error', 'message'=>__('order.error_total')], 400);   //!!!!!!!!!! TRANSLATE
         }
         if ($result->total <=0) {
-            return response()->json(['response'=>'error', 'message'=>'Prix incorrect, votre commande n\'a pas été prise en compte'], 400);   //!!!!!!!!!! TRANSLATE
+            return response()->json(['response'=>'error', 'message'=>__('order.error_total')], 400);   //!!!!!!!!!! TRANSLATE
         }
         //Create a preOrder
         $order = Order::create([
