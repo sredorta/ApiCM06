@@ -258,8 +258,8 @@ class OrderController extends Controller
         }
         $html = $html . "<h4>" . __('email.order_products') . "</h4>";
         foreach($cart as $item) {
-            $product = Product::find($item->id);
-            $html = $html . "<p>" . $item->quantity . " x   " . $product->title . "</p>"; 
+            //$product = Product::find($item->id);
+            $html = $html . "<p>" . $item->quantity . " x   " . $item->title . "</p>"; 
         }
         $html = $html . "</div>";
         $html = $html . "</div>";
