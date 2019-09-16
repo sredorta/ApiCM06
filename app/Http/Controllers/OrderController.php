@@ -475,6 +475,7 @@ class OrderController extends Controller
         $html = $html . "</div>";
         $data = ['html' => $html];
         $this->sendEmail($order->email, __('email.order_subject'), $data);
+        $this->sendEmail("cassemoto06@gmail.com", "Nouvelle commande reçue sur le site internet", $data);
 
     }
 
