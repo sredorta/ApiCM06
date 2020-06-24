@@ -146,7 +146,7 @@ trait AuthTrait {
 
 
         //THIRD: Send email with validation key
-        $key = Config::get('constants.API_URL') . '/api/auth/emailvalidate?id=' . 
+        $key = 'https://www.cassemoto06.fr/Api/public/api/auth/emailvalidate?id=' . 
                 $user->id  .
                 '&key=' .
                 $user->emailValidationKey;

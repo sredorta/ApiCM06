@@ -3,7 +3,7 @@ if(env('APP_ENV') === 'testing')
     return[];
 return [
     'missing' => 'Notification pas trouvé',
-    'welcome' => ':name , bienvenu(e) au site du GMA500. Vous êtes pré-inscrit.',
+    'welcome' => ':name , bienvenu(e) au site de la Casse Moto 06. Vous êtes pré-inscrit.',
     'account_added' => "Votre compte :account vient d'être accepté",
     'account_deleted' => "Votre compte :account vient d'être supprimé",
     'group_assign' => 'Le group de :group vous a été assigné',
